@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import logo from '../assets/BGMH.png'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { 
   Store, 
@@ -39,15 +40,24 @@ const EcommerceLayout = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-9 h-9 bg-primary-600 rounded-lg flex items-center justify-center">
-                <Store className="w-5 h-5 text-white" />
-              </div>
-              <div className="hidden sm:block">
-                <h1 className="text-base font-bold text-gray-900 leading-tight">Batang Gapan</h1>
-                <p className="text-xs text-gray-500 -mt-0.5">Mini Hardware</p>
-              </div>
-            </Link>
+           <Link to="/" className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-lg overflow-hidden">
+              <img
+                src={logo}
+                alt="Logo"
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            <div className="hidden sm:block">
+              <h1 className="text-base font-bold text-gray-900 leading-tight">
+                Batang Gapan
+              </h1>
+              <p className="text-xs text-gray-500 -mt-0.5">
+                Mini Hardware
+              </p>
+            </div>
+          </Link>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-1">

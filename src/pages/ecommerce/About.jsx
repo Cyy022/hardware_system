@@ -1,6 +1,7 @@
 import React from 'react'
-import { Store, MapPin, Phone, Mail, Clock, Shield, Award, Users } from 'lucide-react'
+import { MapPin, Phone, Mail, Clock, Shield, Award, Users } from 'lucide-react'
 import { useAccessibility } from '../../context/AccessibilityContext'
+import logo from '../../assets/BGMH.png'
 
 const About = () => {
   const { speak } = useAccessibility()
@@ -28,8 +29,16 @@ const About = () => {
       {/* Hero */}
       <section className="bg-primary-600 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Store className="w-10 h-10 text-white" />
+          <div className="w-32 h-32 rounded-2xl overflow-hidden mx-auto mb-6">
+
+         <div className="w-32 h-32 rounded-2xl overflow-hidden mx-auto mb-6">
+            <img
+              src={logo}
+              alt="Batang Gapan Logo"
+              className="w-full h-full object-cover"
+            />
+          </div>
+
           </div>
           <h1 className="text-4xl font-bold text-white mb-4">About Batang Gapan Mini Hardware</h1>
           <p className="text-primary-100 text-lg max-w-2xl mx-auto">

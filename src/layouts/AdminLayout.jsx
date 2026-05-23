@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import logo from '../assets/BGMH.png'
 import { NavLink, useNavigate, Outlet } from 'react-router-dom'
 import { 
   LayoutDashboard, 
@@ -10,8 +11,7 @@ import {
   LogOut,
   Menu,
   X,
-  Accessibility,
-  Store
+  Accessibility
 } from 'lucide-react'
 import { useAuth } from "../context/AuthContext";
 import { useAccessibility } from "../context/AccessibilityContext";
@@ -64,16 +64,23 @@ const AdminLayout = () => {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } flex flex-col`}
       >
-        {/* Logo */}
-        <div className="px-6 py-6 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
-              <Store className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900 leading-tight">Batang Gapan</h1>
-              <p className="text-xs text-gray-500">Mini Hardware</p>
-            </div>
+        {/* Logo */}     
+        <div className="px-8 py-6 border-b border-gray-100 flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full overflow-hidden">
+            <img
+              src={logo}
+              alt="Batang Gapan Logo"
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+          <div>
+            <h1 className="text-lg font-bold text-gray-900 leading-tight">
+              Batang Gapan
+            </h1>
+            <p className="text-xs text-gray-500">
+              Mini Hardware
+            </p>
           </div>
         </div>
 
