@@ -24,6 +24,8 @@ const salesRef = collection(db, 'sales')
 const suppliersRef = collection(db, 'suppliers')
 const stockInRef = collection(db, 'stockin')
 const usersRef = collection(db, 'users')
+const purchaseOrdersRef = collection(db, 'purchaseOrders')
+const stockInHistoryRef = collection(db, 'stockInHistory')
 
 // ==================== PRODUCTS ====================
 
@@ -202,6 +204,178 @@ export const subscribeToStockIn = (callback) => {
   return onSnapshot(q, (snapshot) => {
     const stockIn = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
     callback(stockIn)
+  })
+}
+
+export const generatePONumber = () => {
+  const now = new Date()
+
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+
+  const random = Math.floor(1000 + Math.random() * 9000)
+
+  return `PO-${year}${month}${day}-${random}`
+}
+
+export const createPurchaseOrder = async (purchaseData) => {
+  try {
+    const docRef = await addDoc(purchaseOrdersRef, {
+      ...purchaseData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    })
+
+    return {
+      id: docRef.id,
+      ...purchaseData
+    }
+  } catch (error) {
+    throw new Error(`Failed to create purchase order: ${error.message}`)
+  }
+}
+
+export const getPurchaseOrders = async () => {
+  try {
+    const q = query(
+      purchaseOrdersRef,
+      orderBy('createdAt', 'desc')
+    )
+
+    const snapshot = await getDocs(q)
+
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }))
+  } catch (error) {
+    throw new Error(`Failed to get purchase orders: ${error.message}`)
+  }
+}
+
+export const subscribeToPurchaseOrders = (callback) => {
+  const q = query(
+    purchaseOrdersRef,
+    orderBy('createdAt', 'desc')
+  )
+
+  return onSnapshot(q, (snapshot) => {
+    const purchaseOrders = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }))
+
+    callback(purchaseOrders)
+  })
+}
+
+export const receivePurchaseOrder = async (purchaseOrderId) => {
+  try {
+    const purchaseOrderRef = doc(db, 'purchaseOrders', purchaseOrderId)
+    const purchaseOrderSnap = await getDoc(purchaseOrderRef)
+
+    if (!purchaseOrderSnap.exists()) {
+      throw new Error('Purchase order not found')
+    }
+
+    const purchaseOrder = purchaseOrderSnap.data()
+
+    // CHECK ITEMS
+    if (
+      !purchaseOrder.items ||
+      !Array.isArray(purchaseOrder.items)
+    ) {
+      throw new Error('Purchase order items are invalid')
+    }
+
+    const batch = writeBatch(db)
+
+    // UPDATE VARIANT STOCKS
+    for (const item of purchaseOrder.items) {
+      const variantRef = doc(db, 'variants', item.variantId)
+
+      batch.update(variantRef, {
+        quantity: increment(Number(item.quantity)),
+        updatedAt: serverTimestamp()
+      })
+    }
+
+    // UPDATE PURCHASE ORDER STATUS
+    batch.update(purchaseOrderRef, {
+      status: 'Received',
+      receivedAt: serverTimestamp()
+    })
+
+    // SAVE STOCK HISTORY
+    const historyRef = doc(collection(db, 'stockHistory'))
+
+    batch.set(historyRef, {
+      poNumber: purchaseOrder.poNumber,
+      supplierName: purchaseOrder.supplierName,
+      items: purchaseOrder.items,
+      totalAmount: purchaseOrder.totalAmount || 0,
+      receivedBy: purchaseOrder.email || '',
+      createdAt: serverTimestamp(),
+      status: 'Completed'
+    })
+
+    await batch.commit()
+
+    return true
+  } catch (error) {
+    throw new Error(
+      `Failed to receive purchase order: ${error.message}`
+    )
+  }
+}
+
+export const cancelPurchaseOrder = async (purchaseOrderId) => {
+  try {
+    const poRef = doc(db, 'purchaseOrders', purchaseOrderId)
+
+    await updateDoc(poRef, {
+      status: 'Cancelled',
+      updatedAt: serverTimestamp()
+    })
+
+    return true
+  } catch (error) {
+    throw new Error(`Failed to cancel purchase order: ${error.message}`)
+  }
+}
+
+export const getStockInHistoryData = async () => {
+  try {
+    const q = query(
+      stockInHistoryRef,
+      orderBy('createdAt', 'desc')
+    )
+
+    const snapshot = await getDocs(q)
+
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }))
+  } catch (error) {
+    throw new Error(`Failed to get stock history: ${error.message}`)
+  }
+}
+
+export const subscribeToStockHistory = (callback) => {
+  const q = query(
+    stockInHistoryRef,
+    orderBy('createdAt', 'desc')
+  )
+
+  return onSnapshot(q, (snapshot) => {
+    const history = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }))
+
+    callback(history)
   })
 }
 
