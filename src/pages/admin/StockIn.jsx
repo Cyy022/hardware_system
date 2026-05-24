@@ -213,13 +213,16 @@ const totalAmount = formattedItems.reduce(
 await createPurchaseOrder(purchaseData)
 
 // EMAIL VALIDATION
-if (email) {
+if (email && email.trim() !== '') {
   try {
     await emailjs.send(
       'service_daso4rv',
       'template_a41se2f',
       {
-        to_email: email,
+        to_email: email.trim(),
+        email: email.trim(),
+        name: purchaseData.supplierName,
+
         po_number: purchaseData.poNumber,
         supplier: purchaseData.supplierName,
         total_amount: totalAmount
@@ -237,7 +240,7 @@ if (email) {
       'Email failed to send'
     )
   }
-}
+} 
 
 toast.success(
   'Purchase order created successfully'
