@@ -101,16 +101,18 @@ const EcommerceLayout = () => {
               className="flex items-center gap-3"
             >
 
-              <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm">
+              <div className="w-11 h-11 rounded-xl overflow-hidden bg-white flex items-center justify-center border border-gray-200 shadow-sm">
 
                 <img
                   src={logo}
-                  alt="Batang Gapan Mini Hardware"
-                  className="w-full h-full object-cover"
+                  alt="Batang Gapan Mini Hardware Logo"
+                  className="w-full h-full object-contain p-1"
+                  onError={(e) => {
+                    e.target.src = '/fallback-logo.png'
+                  }}
                 />
 
               </div>
-
               <div className="hidden sm:block">
 
                 <h1 className="text-base font-bold text-gray-900 leading-tight">

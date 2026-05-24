@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+
 import {
   signInWithEmailAndPassword,
   signOut,
@@ -10,11 +11,11 @@ import {
 
 import {
   doc,
-  setDoc,
-  getDoc
+  setDoc
 } from 'firebase/firestore'
 
 import { auth, db } from '../firebase/config'
+
 import toast from 'react-hot-toast'
 
 const AuthContext = createContext()
@@ -29,30 +30,39 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
 
+  // ADMIN EMAIL
   const ADMIN_EMAIL = 'cyruscabanes@gmail.com'
+
+  // ================= AUTH STATE =================
 
   useEffect(() => {
 
     setPersistence(auth, browserLocalPersistence)
 
-    const unsubscribe = onAuthStateChanged(auth, async(currentUser) => {
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (currentUser) => {
 
-      if (currentUser) {
+        if (currentUser) {
 
-        setUser(currentUser)
+          setUser(currentUser)
 
-        setIsAdmin(currentUser.email === ADMIN_EMAIL)
+          // ADMIN CHECK
+          setIsAdmin(
+            currentUser.email === ADMIN_EMAIL
+          )
 
-      } else {
+        } else {
 
-        setUser(null)
-        setIsAdmin(false)
+          setUser(null)
+          setIsAdmin(false)
+
+        }
+
+        setLoading(false)
 
       }
-
-      setLoading(false)
-
-    })
+    )
 
     return () => unsubscribe()
 
@@ -60,28 +70,36 @@ export const AuthProvider = ({ children }) => {
 
   // ================= REGISTER =================
 
-  const register = async(formData) => {
+  const register = async (formData) => {
 
     try {
 
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      )
+      const userCredential =
+        await createUserWithEmailAndPassword(
+          auth,
+          formData.email,
+          formData.password
+        )
 
       const firebaseUser = userCredential.user
 
-      await setDoc(doc(db, 'users', firebaseUser.uid), {
-        uid: firebaseUser.uid,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        role: 'customer',
-        createdAt: new Date()
-      })
+      // SAVE USER DATA
+      await setDoc(
+        doc(db, 'users', firebaseUser.uid),
+        {
+          uid: firebaseUser.uid,
+          firstName: formData.firstName || '',
+          lastName: formData.lastName || '',
+          email: formData.email || '',
+          phone: formData.phone || '',
+          address: formData.address || '',
+          role:
+            formData.email === ADMIN_EMAIL
+              ? 'admin'
+              : 'customer',
+          createdAt: new Date()
+        }
+      )
 
       toast.success('Account created successfully!')
 
@@ -89,7 +107,22 @@ export const AuthProvider = ({ children }) => {
 
     } catch (error) {
 
-      toast.error(error.message)
+      console.error(error)
+
+      if (error.code === 'auth/email-already-in-use') {
+
+        toast.error('Email already exists.')
+
+      } else if (error.code === 'auth/weak-password') {
+
+        toast.error('Password should be at least 6 characters.')
+
+      } else {
+
+        toast.error('Registration failed.')
+
+      }
+
       throw error
 
     }
@@ -97,20 +130,56 @@ export const AuthProvider = ({ children }) => {
   }
 
   // ================= LOGIN =================
-
-const login = async (email, password) => {
+const login = async (email, password, loginType = 'user') => {
 
   try {
 
-    const userCredential = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    )
+    const userCredential =
+      await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      )
 
-    return userCredential.user
+    const loggedInUser = userCredential.user
+
+    // ADMIN LOGIN CHECK
+    if (
+      loginType === 'admin' &&
+      loggedInUser.email !== ADMIN_EMAIL
+    ) {
+
+      await signOut(auth)
+
+      toast.error('Access denied. Admin only.')
+
+      throw new Error('Not admin')
+
+    }
+
+    // ECOMMERCE LOGIN CHECK
+    if (
+      loginType === 'user' &&
+      loggedInUser.email === ADMIN_EMAIL
+    ) {
+
+      await signOut(auth)
+
+      toast.error(
+        'Admin account is not allowed in ecommerce login.'
+      )
+
+      throw new Error('Admin blocked from ecommerce')
+
+    }
+
+    toast.success('Login successful!')
+
+    return loggedInUser
 
   } catch (error) {
+
+    console.error(error)
 
     if (
       error.code === 'auth/invalid-credential' ||
@@ -120,11 +189,18 @@ const login = async (email, password) => {
 
       toast.error('Invalid email or password.')
 
-    } else if (error.code === 'auth/too-many-requests') {
+    } else if (
+      error.code === 'auth/too-many-requests'
+    ) {
 
-      toast.error('Too many login attempts. Try again later.')
+      toast.error(
+        'Too many login attempts. Please wait a few minutes.'
+      )
 
-    } else {
+    } else if (
+      error.message !== 'Not admin' &&
+      error.message !== 'Admin blocked from ecommerce'
+    ) {
 
       toast.error('Login failed.')
 
@@ -137,17 +213,23 @@ const login = async (email, password) => {
 }
   // ================= LOGOUT =================
 
-  const logout = async() => {
+  const logout = async () => {
 
     try {
 
       await signOut(auth)
 
-      toast.success('Logged out successfully')
+      setUser(null)
+      setIsAdmin(false)
+
+      toast.success('Logged out successfully.')
 
     } catch (error) {
 
-      toast.error(error.message)
+      console.error(error)
+
+      toast.error('Logout failed.')
+
       throw error
 
     }
@@ -165,7 +247,8 @@ const login = async (email, password) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   )
+
 }
