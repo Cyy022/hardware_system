@@ -30,8 +30,9 @@ import toast from 'react-hot-toast'
 
 const AdminLayout = () => {
 
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [accessibilityOpen, setAccessibilityOpen] = useState(false)
+const [sidebarOpen, setSidebarOpen] = useState(false)
+const [accessibilityOpen, setAccessibilityOpen] = useState(false)
+const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   const { logout, user } = useAuth()
 
@@ -81,23 +82,27 @@ const AdminLayout = () => {
 
   // ================= LOGOUT =================
 
-  const handleLogout = async () => {
+const handleLogout = async () => {
 
-    try {
+  try {
 
-      await logout()
+    await logout()
 
-      navigate('/admin/login')
+    setShowLogoutModal(false)
 
-    } catch (error) {
+    navigate('/admin/login')
 
-      console.error(error)
+    speak('Logged out successfully')
 
-      toast.error('Failed to logout')
+  } catch (error) {
 
-    }
+    toast.error('Failed to logout')
+
+    speak('Logout failed')
 
   }
+
+}
 
   // ================= NAVIGATION =================
 
@@ -234,7 +239,7 @@ const AdminLayout = () => {
 
           {/* LOGOUT */}
           <button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutModal(true)}
             className="
               w-full flex items-center gap-3
               px-4 py-3 rounded-xl
@@ -302,6 +307,76 @@ const AdminLayout = () => {
           </div>
 
         </header>
+
+{/* ================= LOGOUT MODAL ================= */}
+
+{showLogoutModal && (
+
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+
+    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 animate-fade-in">
+
+      {/* Icon */}
+
+      <div className="w-16 h-16 mx-auto rounded-full bg-red-100 flex items-center justify-center mb-4">
+
+        <LogOut className="w-8 h-8 text-red-600" />
+
+      </div>
+
+      {/* Title */}
+
+      <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
+
+        Logout Admin
+
+      </h2>
+
+      {/* Message */}
+
+      <p className="text-gray-500 text-center mb-6">
+
+        Are you sure you want to logout this admin account?
+
+      </p>
+
+      {/* Buttons */}
+
+      <div className="flex gap-3">
+
+        <button
+          onClick={() => setShowLogoutModal(false)}
+          className="
+            flex-1 py-3 rounded-2xl
+            border border-gray-200
+            text-gray-700 font-semibold
+            hover:bg-gray-100
+            transition
+          "
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="
+            flex-1 py-3 rounded-2xl
+            bg-red-600 text-white
+            font-semibold
+            hover:bg-red-700
+            transition
+          "
+        >
+          Logout
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+)}
 
         {/* PAGE */}
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto">

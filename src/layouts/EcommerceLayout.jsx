@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import logo from '../assets/BGMH.png'
 
+
 import {
   Link,
   NavLink,
@@ -30,6 +31,7 @@ const EcommerceLayout = () => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [accessibilityOpen, setAccessibilityOpen] = useState(false)
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   const { speak } = useAccessibility()
 
@@ -69,19 +71,25 @@ const EcommerceLayout = () => {
 
   }
 
-  const handleLogout = async () => {
+const handleLogout = async () => {
 
-    try {
+  try {
 
-      await logout()
+    await logout()
 
-    } catch (error) {
+    setShowLogoutModal(false)
 
-      console.log(error)
+    speak('Logged out successfully')
 
-    }
+  } catch (error) {
+
+    console.log(error)
+
+    speak('Logout failed')
 
   }
+
+}
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -194,7 +202,7 @@ const EcommerceLayout = () => {
                   </div>
 
                   <button
-                    onClick={handleLogout}
+                  onClick={() => setShowLogoutModal(true)}
                     className="p-2 rounded-xl hover:bg-red-50 hover:text-red-600 transition"
                   >
                     <LogOut className="w-5 h-5" />
@@ -273,7 +281,7 @@ const EcommerceLayout = () => {
               {user ? (
 
                 <button
-                  onClick={handleLogout}
+                 onClick={() => setShowLogoutModal(true)}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition"
                 >
                   <LogOut className="w-5 h-5" />
@@ -421,6 +429,76 @@ const EcommerceLayout = () => {
             </div>
 
           </div>
+
+          {/* ================= LOGOUT MODAL ================= */}
+
+{showLogoutModal && (
+
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+
+    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 animate-fade-in">
+
+      {/* Icon */}
+
+      <div className="w-16 h-16 mx-auto rounded-full bg-red-100 flex items-center justify-center mb-4">
+
+        <LogOut className="w-8 h-8 text-red-600" />
+
+      </div>
+
+      {/* Title */}
+
+      <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
+
+        Logout Account
+
+      </h2>
+
+      {/* Message */}
+
+      <p className="text-gray-500 text-center mb-6">
+
+        Do you want to log out this account?
+
+      </p>
+
+      {/* Buttons */}
+
+      <div className="flex gap-3">
+
+        <button
+          onClick={() => setShowLogoutModal(false)}
+          className="
+            flex-1 py-3 rounded-2xl
+            border border-gray-200
+            text-gray-700 font-semibold
+            hover:bg-gray-100
+            transition
+          "
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="
+            flex-1 py-3 rounded-2xl
+            bg-red-600 text-white
+            font-semibold
+            hover:bg-red-700
+            transition
+          "
+        >
+          Logout
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+)}
 
           {/* Copyright */}
 
