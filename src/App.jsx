@@ -16,7 +16,6 @@ import Home from './pages/ecommerce/Home'
 import Categories from './pages/ecommerce/Categories'
 import Products from './pages/ecommerce/Products'
 import About from './pages/ecommerce/About'
-import SignIn from './pages/ecommerce/SignIn'
 import SignUp from './pages/ecommerce/SignUp'
 import Cart from './pages/ecommerce/Cart'
 import Checkout from './pages/ecommerce/Checkout'
@@ -51,7 +50,6 @@ function App() {
         <Route path="/checkout" element={<Checkout />} />
       </Route>
 
-            <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
 
       {/* Redirect root admin to login */}
