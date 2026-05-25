@@ -121,12 +121,12 @@ function App() {
 
       <Route
         path="/signin"
-        element={<Signin />}
+        element={<SignIn />}
       />
 
       <Route
         path="/signup"
-        element={<Signup />}
+        element={<SignUp />}
       />
 
       {/* ================= ADMIN ROOT ================= */}

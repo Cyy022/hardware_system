@@ -18,10 +18,9 @@ const SignIn = () => {
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [loading, setLoading] = useState(false)
-  const loginMessage =
-  location.state?.message || ''
 
-  // ================= SUBMIT =================
+  const loginMessage =
+    location.state?.message || ''
 
   const handleSubmit = async (e) => {
 
@@ -29,10 +28,11 @@ const SignIn = () => {
 
     setErrorMessage('')
 
-    // VALIDATION
     if (!email || !password) {
 
-      setErrorMessage('Please fill in all fields.')
+      setErrorMessage(
+        'Please fill in all fields.'
+      )
 
       return
 
@@ -42,7 +42,6 @@ const SignIn = () => {
 
       setLoading(true)
 
-      // USER LOGIN ONLY
       await login(email, password, 'user')
 
       navigate('/')
@@ -57,7 +56,9 @@ const SignIn = () => {
         error.code === 'auth/user-not-found'
       ) {
 
-        setErrorMessage('Invalid email or password.')
+        setErrorMessage(
+          'Invalid email or password.'
+        )
 
       } else if (
         error.code === 'auth/too-many-requests'
@@ -68,7 +69,8 @@ const SignIn = () => {
         )
 
       } else if (
-        error.message === 'Admin blocked from ecommerce'
+        error.message ===
+        'Admin blocked from ecommerce'
       ) {
 
         setErrorMessage(
@@ -78,7 +80,7 @@ const SignIn = () => {
       } else {
 
         setErrorMessage(
-          'Something went wrong. Please try again.'
+          'Something went wrong.'
         )
 
       }
@@ -97,39 +99,29 @@ const SignIn = () => {
 
       <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
 
-        {/* TITLE */}
         <h1 className="text-3xl font-bold mb-2 text-center text-gray-900">
-
           Sign In
-
         </h1>
 
         <p className="text-center text-gray-500 mb-6">
-
           Login to your account
-
         </p>
 
+        {loginMessage && (
 
-        {/* LOGIN REQUIRED MESSAGE */}
+          <div className="mb-4 bg-yellow-100 border border-yellow-300 text-yellow-800 px-4 py-3 rounded-xl text-sm">
 
-{loginMessage && (
+            {loginMessage}
 
-  <div className="mb-4 bg-yellow-100 border border-yellow-300 text-yellow-800 px-4 py-3 rounded-xl text-sm">
+          </div>
 
-    {loginMessage}
+        )}
 
-  </div>
-
-)}
-
-        {/* FORM */}
         <form
           onSubmit={handleSubmit}
           className="space-y-4"
         >
 
-          {/* ERROR */}
           {errorMessage && (
 
             <div className="bg-red-100 text-red-700 px-4 py-3 rounded-xl text-sm">
@@ -140,25 +132,16 @@ const SignIn = () => {
 
           )}
 
-          {/* EMAIL */}
           <div>
 
             <label className="block text-sm font-medium text-gray-700 mb-2">
-
               Email
-
             </label>
 
             <input
               type="email"
               placeholder="Enter your email"
-              className="
-                w-full border border-gray-300
-                rounded-xl px-4 py-3
-                focus:outline-none
-                focus:ring-2
-                focus:ring-green-500
-              "
+              className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
               value={email}
               onChange={(e) =>
                 setEmail(e.target.value)
@@ -167,25 +150,16 @@ const SignIn = () => {
 
           </div>
 
-          {/* PASSWORD */}
           <div>
 
             <label className="block text-sm font-medium text-gray-700 mb-2">
-
               Password
-
             </label>
 
             <input
               type="password"
               placeholder="Enter your password"
-              className="
-                w-full border border-gray-300
-                rounded-xl px-4 py-3
-                focus:outline-none
-                focus:ring-2
-                focus:ring-green-500
-              "
+              className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
               value={password}
               onChange={(e) =>
                 setPassword(e.target.value)
@@ -194,26 +168,20 @@ const SignIn = () => {
 
           </div>
 
-          {/* BUTTON */}
           <button
             type="submit"
             disabled={loading}
-            className="
-              w-full bg-green-600 text-white
-              py-3 rounded-xl
-              hover:bg-green-700
-              transition-all
-              disabled:opacity-50
-            "
+            className="w-full bg-green-600 text-white py-3 rounded-xl hover:bg-green-700 transition-all disabled:opacity-50"
           >
 
-            {loading ? 'Signing In...' : 'Sign In'}
+            {loading
+              ? 'Signing In...'
+              : 'Sign In'}
 
           </button>
 
         </form>
 
-        {/* SIGNUP */}
         <p className="text-center mt-6 text-sm text-gray-600">
 
           Don’t have an account?
