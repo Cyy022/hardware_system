@@ -23,7 +23,7 @@ import About from './pages/ecommerce/About'
 import Cart from './pages/ecommerce/Cart'
 import Checkout from './pages/ecommerce/Checkout'
 
-import SignIn from './pages/ecommerce/SignIn'
+import SignIn from './pages/ecommerce/Signin'
 import SignUp from './pages/ecommerce/SignUp'
 
 function App() {
