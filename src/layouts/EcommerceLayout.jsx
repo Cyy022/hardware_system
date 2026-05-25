@@ -1,14 +1,8 @@
 import React, { useState } from 'react'
 import logo from '../assets/BGMH.png'
 
-
 import {
-  Link,
-  NavLink,
-  Outlet
-} from 'react-router-dom'
-
-import {
+  ShoppingBag,
   Store,
   Home,
   Grid3X3,
@@ -21,6 +15,12 @@ import {
   LogOut,
   ShoppingCart
 } from 'lucide-react'
+
+import {
+  Link,
+  NavLink,
+  Outlet
+} from 'react-router-dom'
 
 import { useAuth } from '../context/AuthContext'
 import { useAccessibility } from '../context/AccessibilityContext'
@@ -60,6 +60,11 @@ const EcommerceLayout = () => {
       path: '/about',
       label: 'About',
       icon: Info
+    },
+    {
+      path: '/my-orders',
+      label: 'My Orders',
+      icon: ShoppingBag
     }
   ]
 
@@ -71,27 +76,30 @@ const EcommerceLayout = () => {
 
   }
 
-const handleLogout = async () => {
+  const handleLogout = async () => {
 
-  try {
+    try {
 
-    await logout()
+     localStorage.removeItem('cart')
 
-    setShowLogoutModal(false)
+      await logout()
 
-    speak('Logged out successfully')
+      setShowLogoutModal(false)
 
-  } catch (error) {
+      speak('Logged out successfully')
 
-    console.log(error)
+    } catch (error) {
 
-    speak('Logout failed')
+      console.log(error)
+
+      speak('Logout failed')
+
+    }
 
   }
 
-}
-
   return (
+
     <div className="min-h-screen bg-gray-50 flex flex-col">
 
       {/* ================= NAVIGATION ================= */}
@@ -121,6 +129,7 @@ const handleLogout = async () => {
                 />
 
               </div>
+
               <div className="hidden sm:block">
 
                 <h1 className="text-base font-bold text-gray-900 leading-tight">
@@ -164,15 +173,21 @@ const handleLogout = async () => {
 
             <div className="flex items-center gap-2">
 
-              {/* Cart */}
+              {/* ================= CART ================= */}
 
-              <button
-                className="p-2 rounded-xl hover:bg-gray-100 transition"
+              <Link
+                to="/cart"
+                onClick={() => speak('Opening cart')}
+                className="
+                  p-2 rounded-xl
+                  hover:bg-gray-100
+                  transition
+                "
               >
                 <ShoppingCart className="w-5 h-5 text-gray-700" />
-              </button>
+              </Link>
 
-              {/* Accessibility */}
+              {/* ================= ACCESSIBILITY ================= */}
 
               <button
                 onClick={() =>
@@ -183,7 +198,7 @@ const handleLogout = async () => {
                 <Accessibility className="w-5 h-5 text-gray-700" />
               </button>
 
-              {/* User */}
+              {/* ================= USER ================= */}
 
               {user ? (
 
@@ -202,7 +217,7 @@ const handleLogout = async () => {
                   </div>
 
                   <button
-                  onClick={() => setShowLogoutModal(true)}
+                    onClick={() => setShowLogoutModal(true)}
                     className="p-2 rounded-xl hover:bg-red-50 hover:text-red-600 transition"
                   >
                     <LogOut className="w-5 h-5" />
@@ -217,12 +232,13 @@ const handleLogout = async () => {
                   className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition"
                 >
                   <User className="w-4 h-4" />
+
                   Sign In
                 </Link>
 
               )}
 
-              {/* Mobile Menu Button */}
+              {/* ================= MOBILE MENU BUTTON ================= */}
 
               <button
                 onClick={() =>
@@ -276,12 +292,27 @@ const handleLogout = async () => {
 
               ))}
 
-              {/* Mobile Auth */}
+              {/* MOBILE CART */}
+
+              <Link
+                to="/cart"
+                onClick={() => {
+                  speak('Opening cart')
+                  setMobileMenuOpen(false)
+                }}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-gray-100 transition"
+              >
+                <ShoppingCart className="w-5 h-5" />
+
+                Cart
+              </Link>
+
+              {/* MOBILE AUTH */}
 
               {user ? (
 
                 <button
-                 onClick={() => setShowLogoutModal(true)}
+                  onClick={() => setShowLogoutModal(true)}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition"
                 >
                   <LogOut className="w-5 h-5" />
@@ -326,7 +357,7 @@ const handleLogout = async () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
 
-            {/* About */}
+            {/* ABOUT */}
 
             <div>
 
@@ -352,7 +383,7 @@ const handleLogout = async () => {
 
             </div>
 
-            {/* Quick Links */}
+            {/* QUICK LINKS */}
 
             <div>
 
@@ -363,37 +394,25 @@ const handleLogout = async () => {
               <ul className="space-y-3 text-sm text-gray-400">
 
                 <li>
-                  <Link
-                    to="/"
-                    className="hover:text-white transition"
-                  >
+                  <Link to="/" className="hover:text-white transition">
                     Home
                   </Link>
                 </li>
 
                 <li>
-                  <Link
-                    to="/products"
-                    className="hover:text-white transition"
-                  >
+                  <Link to="/products" className="hover:text-white transition">
                     Products
                   </Link>
                 </li>
 
                 <li>
-                  <Link
-                    to="/categories"
-                    className="hover:text-white transition"
-                  >
+                  <Link to="/categories" className="hover:text-white transition">
                     Categories
                   </Link>
                 </li>
 
                 <li>
-                  <Link
-                    to="/about"
-                    className="hover:text-white transition"
-                  >
+                  <Link to="/about" className="hover:text-white transition">
                     About Us
                   </Link>
                 </li>
@@ -402,7 +421,7 @@ const handleLogout = async () => {
 
             </div>
 
-            {/* Contact */}
+            {/* CONTACT */}
 
             <div>
 
@@ -432,75 +451,63 @@ const handleLogout = async () => {
 
           {/* ================= LOGOUT MODAL ================= */}
 
-{showLogoutModal && (
+          {showLogoutModal && (
 
-  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
 
-    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 animate-fade-in">
+              <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 animate-fade-in">
 
-      {/* Icon */}
+                <div className="w-16 h-16 mx-auto rounded-full bg-red-100 flex items-center justify-center mb-4">
 
-      <div className="w-16 h-16 mx-auto rounded-full bg-red-100 flex items-center justify-center mb-4">
+                  <LogOut className="w-8 h-8 text-red-600" />
 
-        <LogOut className="w-8 h-8 text-red-600" />
+                </div>
 
-      </div>
+                <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
+                  Logout Account
+                </h2>
 
-      {/* Title */}
+                <p className="text-gray-500 text-center mb-6">
+                  Do you want to log out this account?
+                </p>
 
-      <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
+                <div className="flex gap-3">
 
-        Logout Account
+                  <button
+                    onClick={() => setShowLogoutModal(false)}
+                    className="
+                      flex-1 py-3 rounded-2xl
+                      border border-gray-200
+                      text-gray-700 font-semibold
+                      hover:bg-gray-100
+                      transition
+                    "
+                  >
+                    Cancel
+                  </button>
 
-      </h2>
+                  <button
+                    onClick={handleLogout}
+                    className="
+                      flex-1 py-3 rounded-2xl
+                      bg-red-600 text-white
+                      font-semibold
+                      hover:bg-red-700
+                      transition
+                    "
+                  >
+                    Logout
+                  </button>
 
-      {/* Message */}
+                </div>
 
-      <p className="text-gray-500 text-center mb-6">
+              </div>
 
-        Do you want to log out this account?
+            </div>
 
-      </p>
+          )}
 
-      {/* Buttons */}
-
-      <div className="flex gap-3">
-
-        <button
-          onClick={() => setShowLogoutModal(false)}
-          className="
-            flex-1 py-3 rounded-2xl
-            border border-gray-200
-            text-gray-700 font-semibold
-            hover:bg-gray-100
-            transition
-          "
-        >
-          Cancel
-        </button>
-
-        <button
-          onClick={handleLogout}
-          className="
-            flex-1 py-3 rounded-2xl
-            bg-red-600 text-white
-            font-semibold
-            hover:bg-red-700
-            transition
-          "
-        >
-          Logout
-        </button>
-
-      </div>
-
-    </div>
-
-  </div>
-
-)}
-
-          {/* Copyright */}
+          {/* COPYRIGHT */}
 
           <div className="border-t border-gray-800 mt-10 pt-8 text-center text-sm text-gray-500">
 
@@ -521,7 +528,9 @@ const handleLogout = async () => {
       />
 
     </div>
+
   )
+
 }
 
 export default EcommerceLayout

@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
-
 import {
   Link,
-  useNavigate
+  useNavigate,
+  useLocation
 } from 'react-router-dom'
 
 import { useAuth } from '../../context/AuthContext'
@@ -10,6 +10,7 @@ import { useAuth } from '../../context/AuthContext'
 const SignIn = () => {
 
   const navigate = useNavigate()
+  const location = useLocation()
 
   const { login } = useAuth()
 
@@ -17,6 +18,8 @@ const SignIn = () => {
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const loginMessage =
+  location.state?.message || ''
 
   // ================= SUBMIT =================
 
@@ -106,6 +109,19 @@ const SignIn = () => {
           Login to your account
 
         </p>
+
+
+        {/* LOGIN REQUIRED MESSAGE */}
+
+{loginMessage && (
+
+  <div className="mb-4 bg-yellow-100 border border-yellow-300 text-yellow-800 px-4 py-3 rounded-xl text-sm">
+
+    {loginMessage}
+
+  </div>
+
+)}
 
         {/* FORM */}
         <form

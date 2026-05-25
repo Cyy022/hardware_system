@@ -6,6 +6,7 @@ import { useAccessibility } from '../../context/AccessibilityContext'
 import { getStockStatus } from '../../firebase/services'
 import Modal from '../../components/common/Modal'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
+import toast from 'react-hot-toast'
 
 const Products = () => {
   const { products, categories, loading } = useProducts()
@@ -103,13 +104,12 @@ const Products = () => {
             const minPrice = Math.min(...(product.variants?.map(v => v.price) || [0]))
             const maxPrice = Math.max(...(product.variants?.map(v => v.price) || [0]))
 
-            return (
-              <div
-                key={product.id}
-                className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all cursor-pointer"
-                onClick={() => openProductModal(product)}
-                onMouseEnter={() => speak(product.name)}
-              >
+           return (
+  <div
+    key={product.id}
+    className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all"
+    onMouseEnter={() => speak(product.name)}
+  >
                 <div className="h-48 bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center relative">
                   <Package className="w-16 h-16 text-primary-300" />
                   {totalStock <= 0 && (
@@ -128,19 +128,98 @@ const Products = () => {
                   <p className="text-sm text-gray-500 mt-1">
                     {product.variants?.length || 0} variants
                   </p>
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="text-lg font-bold text-primary-700">
-                      {minPrice === maxPrice 
-                        ? `₱${minPrice?.toLocaleString()}` 
-                        : `₱${minPrice?.toLocaleString()} - ₱${maxPrice?.toLocaleString()}`
-                      }
-                    </span>
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      totalStock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {totalStock > 0 ? 'Available' : 'Out of Stock'}
-                    </span>
-                  </div>
+                <div className="mt-3 flex items-center justify-between">
+  <span className="text-lg font-bold text-primary-700">
+    {minPrice === maxPrice 
+      ? `₱${minPrice?.toLocaleString()}` 
+      : `₱${minPrice?.toLocaleString()} - ₱${maxPrice?.toLocaleString()}`
+    }
+  </span>
+
+  <span
+    className={`text-xs font-medium px-2 py-1 rounded-full ${
+      totalStock > 0
+        ? 'bg-green-100 text-green-700'
+        : 'bg-red-100 text-red-700'
+    }`}
+  >
+    {totalStock > 0 ? 'Available' : 'Out of Stock'}
+  </span>
+</div>
+
+{/* BUTTONS */}
+
+<div className="mt-4 flex gap-2">
+
+  <button
+    onClick={() => openProductModal(product)}
+    className="
+      flex-1 py-2 rounded-xl border border-gray-200
+      hover:bg-gray-100 transition text-sm font-medium
+    "
+  >
+    View
+  </button>
+
+  <button
+    onClick={(e) => {
+      e.stopPropagation()
+
+      const existingCart =
+        JSON.parse(localStorage.getItem('cart')) || []
+
+      const existingItem = existingCart.find(
+        item => item.id === product.id
+      )
+
+      if (existingItem) {
+
+        existingItem.quantity += 1
+
+      } else {
+
+        existingCart.push({
+          ...product,
+          quantity: 1,
+          price: minPrice
+        })
+
+      }
+
+      localStorage.setItem(
+        'cart',
+        JSON.stringify(existingCart)
+      )
+
+      speak(`${product.name} added to cart`)
+
+      toast.success('Product added to cart!', {
+        duration: 3000,
+        style: {
+          borderRadius: '16px',
+          background: '#16a34a',
+          color: '#fff',
+          padding: '14px 18px',
+          fontWeight: '600'
+        },
+        iconTheme: {
+          primary: '#fff',
+          secondary: '#16a34a'
+        }
+      })
+    }}
+    disabled={totalStock <= 0}
+    className="
+      flex-1 py-2 rounded-xl bg-green-600
+      hover:bg-green-700 text-white
+      transition text-sm font-medium
+      disabled:bg-gray-300 disabled:cursor-not-allowed
+    "
+  >
+    Add to Cart
+  </button>
+
+</div>
                 </div>
               </div>
             )

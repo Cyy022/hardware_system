@@ -26,6 +26,7 @@ const stockInRef = collection(db, 'stockin')
 const usersRef = collection(db, 'users')
 const purchaseOrdersRef = collection(db, 'purchaseOrders')
 const stockInHistoryRef = collection(db, 'stockInHistory')
+const ordersRef = collection(db, 'orders')
 
 // ==================== PRODUCTS ====================
 
@@ -538,6 +539,7 @@ export const getProductWithVariants = async (productId) => {
   }
 }
 
+
 export const getAllProductsWithVariants = async () => {
   try {
     const products = await getProducts()
@@ -558,6 +560,228 @@ export const getStockStatus = (quantity, reorderLevel) => {
   if (quantity <= reorderLevel * 0.5) return { status: 'Critical', color: 'badge-danger' }
   if (quantity <= reorderLevel) return { status: 'Low Stock', color: 'badge-warning' }
   return { status: 'In Stock', color: 'badge-success' }
+}
+
+// ==================== ECOMMERCE ORDERS ====================
+
+export const createOrder = async (orderData) => {
+
+  try {
+
+    const formattedItems = orderData.items.map(item => ({
+      productId: item.productId || item.id || '',
+      productName: item.productName || item.name || '',
+      variantId: item.variantId || '',
+      variantName: item.variantName || 'Default',
+      quantity: Number(item.quantity) || 1,
+      price: Number(item.price) || 0
+    }))
+
+    const totalAmount = formattedItems.reduce(
+      (acc, item) =>
+        acc + item.price * item.quantity,
+      0
+    )
+
+    const docRef = await addDoc(ordersRef, {
+
+      customerName:
+        orderData.customerName || 'Customer',
+
+      email:
+        orderData.email || '',
+
+      phone:
+        orderData.phone || '',
+
+      items: formattedItems,
+
+      totalAmount,
+
+      paymentMethod:
+        orderData.paymentMethod || 'cod',
+
+      orderStatus: 'pending',
+
+      paymentStatus: 'pending',
+
+      createdAt: serverTimestamp(),
+
+      updatedAt: serverTimestamp()
+
+    })
+
+    return {
+      id: docRef.id
+    }
+
+  } catch (error) {
+
+    console.log(error)
+
+    throw new Error(
+      `Failed to create order: ${error.message}`
+    )
+
+  }
+
+}
+
+export const getOrders = async () => {
+
+  try {
+
+    const q = query(
+      ordersRef,
+      orderBy('createdAt', 'desc')
+    )
+
+    const snapshot = await getDocs(q)
+
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }))
+
+  } catch (error) {
+
+    throw new Error(
+      `Failed to get orders: ${error.message}`
+    )
+
+  }
+
+}
+
+export const subscribeToOrders = (callback) => {
+
+  const q = query(
+    ordersRef,
+    orderBy('createdAt', 'desc')
+  )
+
+  return onSnapshot(q, (snapshot) => {
+
+    const orders = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }))
+
+    callback(orders)
+
+  })
+
+}
+
+export const updateOrderStatus = async (
+  orderId,
+  status
+) => {
+
+  try {
+
+    const orderRef = doc(
+      db,
+      'orders',
+      orderId
+    )
+
+    await updateDoc(orderRef, {
+
+      orderStatus: status,
+
+      updatedAt: serverTimestamp()
+
+    })
+
+    return true
+
+  } catch (error) {
+
+    throw new Error(
+      `Failed to update order: ${error.message}`
+    )
+
+  }
+
+}
+
+export const completeOrder = async (
+  orderId
+) => {
+
+  try {
+
+    const orderRef = doc(
+      db,
+      'orders',
+      orderId
+    )
+
+    const orderSnap = await getDoc(orderRef)
+
+    if (!orderSnap.exists()) {
+
+      throw new Error('Order not found')
+
+    }
+
+    const order = orderSnap.data()
+
+    const batch = writeBatch(db)
+
+    // ================= DEDUCT STOCK =================
+
+    for (const item of order.items) {
+
+      if (item.variantId) {
+
+        const variantRef = doc(
+          db,
+          'variants',
+          item.variantId
+        )
+
+        batch.update(variantRef, {
+
+          quantity: increment(
+            -Number(item.quantity)
+          ),
+
+          updatedAt: serverTimestamp()
+
+        })
+
+      }
+
+    }
+
+    // ================= UPDATE ORDER =================
+
+    batch.update(orderRef, {
+
+      orderStatus: 'completed',
+
+      paymentStatus: 'paid',
+
+      completedAt: serverTimestamp(),
+
+      updatedAt: serverTimestamp()
+
+    })
+
+    await batch.commit()
+
+    return true
+
+  } catch (error) {
+
+    throw new Error(
+      `Failed to complete order: ${error.message}`
+    )
+
+  }
+
 }
 
 export { db }

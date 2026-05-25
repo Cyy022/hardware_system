@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import logo from '../assets/BGMH.png'
+import { ShoppingCart } from 'lucide-react'
 
 import {
   NavLink,
@@ -77,6 +78,11 @@ const [showLogoutModal, setShowLogoutModal] = useState(false)
       path: '/admin/accounts',
       label: 'Accounts',
       icon: Users
+    },
+    {
+  path: '/admin/orders',
+  label: 'Orders',
+  icon: ShoppingCart
     }
   ]
 

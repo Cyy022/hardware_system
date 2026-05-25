@@ -11,12 +11,15 @@ import StockOut from './pages/admin/StockOut'
 import SalesReports from './pages/admin/SalesReports'
 import Suppliers from './pages/admin/Suppliers'
 import Accounts from './pages/admin/Accounts'
+import Orders from './pages/admin/Orders'
 import Home from './pages/ecommerce/Home'
 import Categories from './pages/ecommerce/Categories'
 import Products from './pages/ecommerce/Products'
 import About from './pages/ecommerce/About'
 import SignIn from './pages/ecommerce/SignIn'
 import SignUp from './pages/ecommerce/SignUp'
+import Cart from './pages/ecommerce/Cart'
+import Checkout from './pages/ecommerce/Checkout'
 
 
 function App() {
@@ -33,16 +36,19 @@ function App() {
           <Route path="/admin/sales-reports" element={<SalesReports />} />
           <Route path="/admin/suppliers" element={<Suppliers />} />
           <Route path="/admin/accounts" element={<Accounts />} />
-          
+          <Route path="/admin/orders" element={<Orders />} />
         </Route>
       </Route>
 
+      {/* E-commerce Routes */}
       {/* E-commerce Routes */}
       <Route element={<EcommerceLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/categories" element={<Categories />} />
         <Route path="/products" element={<Products />} />
         <Route path="/about" element={<About />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
       </Route>
 
             <Route path="/signin" element={<SignIn />} />
