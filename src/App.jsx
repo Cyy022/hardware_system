@@ -22,22 +22,18 @@ import Products from './pages/ecommerce/Products'
 import About from './pages/ecommerce/About'
 import Cart from './pages/ecommerce/Cart'
 import Checkout from './pages/ecommerce/Checkout'
-
-import SignIn from './pages/ecommerce/Signin'
-import SignUp from './pages/ecommerce/Signup'
+import SignIn from './pages/ecommerce/SignIn'
+import SignUp from './pages/ecommerce/SignUp'
 
 function App() {
-
   return (
-
     <Routes>
 
-      {/* ================= ADMIN ================= */}
-
+      {/* ADMIN LOGIN */}
       <Route path="/admin/login" element={<AdminLogin />} />
 
+      {/* ADMIN ROUTES */}
       <Route element={<ProtectedRoute />}>
-
         <Route element={<AdminLayout />}>
 
           <Route
@@ -81,11 +77,9 @@ function App() {
           />
 
         </Route>
-
       </Route>
 
-      {/* ================= ECOMMERCE ================= */}
-
+      {/* ECOMMERCE */}
       <Route element={<EcommerceLayout />}>
 
         <Route path="/" element={<Home />} />
@@ -117,8 +111,7 @@ function App() {
 
       </Route>
 
-      {/* ================= AUTH ================= */}
-
+      {/* AUTH */}
       <Route
         path="/signin"
         element={<SignIn />}
@@ -129,17 +122,14 @@ function App() {
         element={<SignUp />}
       />
 
-      {/* ================= ADMIN ROOT ================= */}
-
+      {/* ADMIN ROOT */}
       <Route
         path="/admin"
         element={<AdminLogin />}
       />
 
     </Routes>
-
   )
-
 }
 
 export default App
