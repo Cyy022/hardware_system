@@ -196,8 +196,16 @@ const Home = () => {
                 className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all"
                 onMouseEnter={() => speak(product.name)}
               >
-                <div className="h-48 bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center">
-                  <Package className="w-16 h-16 text-primary-300" />
+                <div className="h-48 bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center overflow-hidden">
+                  {product.image ? (
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <Package className="w-16 h-16 text-primary-300" />
+                  )}
                 </div>
                 <div className="p-5">
                   <span className="text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full">

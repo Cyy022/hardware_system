@@ -258,11 +258,19 @@ const Cart = () => {
 
                   <div className="
                     w-24 h-24 rounded-2xl
-                    bg-green-100
-                    flex items-center justify-center
+                    bg-green-100 overflow-hidden
+                    flex items-center justify-center shrink-0
                   ">
 
-                    <ShoppingBag className="w-10 h-10 text-green-600" />
+                    {item.image ? (
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <ShoppingBag className="w-10 h-10 text-green-600" />
+                    )}
 
                   </div>
 

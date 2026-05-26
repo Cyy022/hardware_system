@@ -110,8 +110,16 @@ const Products = () => {
     className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all"
     onMouseEnter={() => speak(product.name)}
   >
-                <div className="h-48 bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center relative">
-                  <Package className="w-16 h-16 text-primary-300" />
+                <div className="h-48 bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center relative overflow-hidden">
+                  {product.image ? (
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <Package className="w-16 h-16 text-primary-300" />
+                  )}
                   {totalStock <= 0 && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                       <span className="text-white font-semibold">Out of Stock</span>
@@ -238,6 +246,18 @@ const Products = () => {
           <div className="space-y-6">
             <div className="flex items-center gap-2">
               <span className="badge badge-info">{selectedProduct.category}</span>
+            </div>
+
+            <div className="h-64 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 overflow-hidden flex items-center justify-center">
+              {selectedProduct.image ? (
+                <img
+                  src={selectedProduct.image}
+                  alt={selectedProduct.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Package className="w-20 h-20 text-primary-300" />
+              )}
             </div>
 
             <div>

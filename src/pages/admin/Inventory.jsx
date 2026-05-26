@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Search, Edit2, Trash2, Eye, ChevronLeft, ChevronRight, Package, AlertTriangle } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, Eye, ChevronLeft, ChevronRight, Package, AlertTriangle, Image as ImageIcon, Upload, X } from 'lucide-react'
 import { useProducts } from '../../hooks/useProducts'
 import { useAccessibility } from '../../context/AccessibilityContext'
 import { addProduct, updateProduct, deleteProduct, addVariant, updateVariant, deleteVariant, getStockStatus } from '../../firebase/services'
@@ -41,7 +41,8 @@ const Inventory = () => {
   )
 
   // Product form state
-  const [productForm, setProductForm] = useState({ name: '', category: '' })
+  const emptyProductForm = { name: '', category: '', image: '' }
+  const [productForm, setProductForm] = useState(emptyProductForm)
   const [variantForm, setVariantForm] = useState({
     name: '', sku: '', size: '', unit: 'pcs', price: '', quantity: '', reorderLevel: ''
   })
@@ -52,7 +53,7 @@ const Inventory = () => {
       await addProduct(productForm)
       toast.success('Product added successfully')
       setShowProductModal(false)
-      setProductForm({ name: '', category: '' })
+      setProductForm(emptyProductForm)
       speak('Product added successfully')
     } catch (error) {
       toast.error(error.message)
@@ -66,7 +67,7 @@ const Inventory = () => {
       toast.success('Product updated successfully')
       setShowProductModal(false)
       setEditingProduct(null)
-      setProductForm({ name: '', category: '' })
+      setProductForm(emptyProductForm)
     } catch (error) {
       toast.error(error.message)
     }
@@ -126,8 +127,80 @@ const Inventory = () => {
 
   const openEditProduct = (product) => {
     setEditingProduct(product)
-    setProductForm({ name: product.name, category: product.category })
+    setProductForm({
+      name: product.name || '',
+      category: product.category || '',
+      image: product.image || ''
+    })
     setShowProductModal(true)
+  }
+
+  const resizeImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+
+      reader.onload = () => {
+        const image = new Image()
+
+        image.onload = () => {
+          const canvas = document.createElement('canvas')
+          const maxSize = 900
+          const ratio = Math.min(
+            maxSize / image.width,
+            maxSize / image.height,
+            1
+          )
+
+          canvas.width = Math.round(image.width * ratio)
+          canvas.height = Math.round(image.height * ratio)
+
+          const context = canvas.getContext('2d')
+          context.drawImage(image, 0, 0, canvas.width, canvas.height)
+
+          resolve(canvas.toDataURL('image/jpeg', 0.82))
+        }
+
+        image.onerror = reject
+        image.src = reader.result
+      }
+
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handleProductImageChange = async (event) => {
+    const file = event.target.files?.[0]
+
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file')
+
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be 5MB or smaller')
+
+      return
+    }
+
+    try {
+      const image = await resizeImage(file)
+
+      setProductForm((prev) => ({
+        ...prev,
+        image
+      }))
+
+      toast.success('Product image imported')
+    } catch (error) {
+      console.log(error)
+      toast.error('Unable to import image')
+    } finally {
+      event.target.value = ''
+    }
   }
 
   const openAddVariant = (product) => {
@@ -181,7 +254,7 @@ const Inventory = () => {
         <button
           onClick={() => {
             setEditingProduct(null)
-            setProductForm({ name: '', category: '' })
+            setProductForm(emptyProductForm)
             setShowProductModal(true)
           }}
           className="btn-primary flex items-center gap-2"
@@ -221,7 +294,7 @@ const Inventory = () => {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="table-header">Product Name</th>
+                <th className="table-header">Product</th>
                 <th className="table-header">Category</th>
                 <th className="table-header">Total Stock</th>
                 <th className="table-header">Variants</th>
@@ -244,9 +317,27 @@ const Inventory = () => {
                   return (
                     <tr key={product.id} className="hover:bg-gray-50 transition-colors">
                       <td className="table-cell">
-                        <div className="flex items-center gap-2">
-                          {hasLowStock && <AlertTriangle className="w-4 h-4 text-red-500" />}
-                          <span className="font-medium text-gray-900">{product.name}</span>
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-xl bg-primary-50 overflow-hidden flex items-center justify-center shrink-0">
+                            {product.image ? (
+                              <img
+                                src={product.image}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <Package className="w-6 h-6 text-primary-300" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              {hasLowStock && <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />}
+                              <span className="font-medium text-gray-900 break-words">{product.name}</span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {product.image ? 'Image added' : 'No image'}
+                            </p>
+                          </div>
                         </div>
                       </td>
                       <td className="table-cell">
@@ -336,6 +427,55 @@ const Inventory = () => {
         title={editingProduct ? 'Edit Product' : 'Add Product'}
       >
         <form onSubmit={editingProduct ? handleUpdateProduct : handleAddProduct} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Product Image</label>
+            <div className="rounded-2xl border border-dashed border-gray-300 p-4">
+              <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
+                <div className="w-full sm:w-36 aspect-square rounded-2xl bg-gray-100 overflow-hidden flex items-center justify-center">
+                  {productForm.image ? (
+                    <img
+                      src={productForm.image}
+                      alt="Product preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <ImageIcon className="w-10 h-10 text-gray-400" />
+                  )}
+                </div>
+
+                <div className="flex-1">
+                  <p className="text-sm text-gray-600 mb-3">
+                    Import a product photo. It will be compressed and shown in the ecommerce product list.
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <label className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700 cursor-pointer transition">
+                      <Upload className="w-4 h-4" />
+                      Import Image
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleProductImageChange}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {productForm.image && (
+                      <button
+                        type="button"
+                        onClick={() => setProductForm({ ...productForm, image: '' })}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
+                      >
+                        <X className="w-4 h-4" />
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
             <input
