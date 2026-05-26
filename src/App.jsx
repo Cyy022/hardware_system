@@ -23,7 +23,6 @@ import About from './pages/ecommerce/About'
 import Cart from './pages/ecommerce/Cart'
 import Checkout from './pages/ecommerce/Checkout'
 import SignIn from './pages/ecommerce/SignIn'
-import SignUp from './pages/ecommerce/SignUp'
 import Profile from './pages/ecommerce/Profile'
 import MyOrders from './pages/ecommerce/MyOrders'
 
@@ -125,11 +124,6 @@ function App() {
       <Route
         path="/signin"
         element={<SignIn />}
-      />
-
-      <Route
-        path="/signup"
-        element={<SignUp />}
       />
 
       {/* ADMIN ROOT */}
