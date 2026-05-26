@@ -25,6 +25,7 @@ import Checkout from './pages/ecommerce/Checkout'
 import SignIn from './pages/ecommerce/SignIn'
 import SignUp from './pages/ecommerce/SignUp'
 import Profile from './pages/ecommerce/Profile'
+import MyOrders from './pages/ecommerce/MyOrders'
 
 function App() {
   return (
@@ -112,6 +113,11 @@ function App() {
 
         <Route path="/profile" 
         element={<Profile />} />
+
+        <Route
+          path="/my-orders"
+          element={<MyOrders />}
+        />
 
       </Route>
 

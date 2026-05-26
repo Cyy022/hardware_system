@@ -11,6 +11,7 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
+  setDoc,
   writeBatch,
   increment,
   Timestamp
@@ -551,6 +552,30 @@ export const getUserProfile = async (uid) => {
   }
 
 }
+
+export const updateUserProfile = async (uid, profileData) => {
+
+  try {
+
+    const docRef = doc(db, 'users', uid)
+
+    await setDoc(docRef, {
+      ...profileData,
+      updatedAt: serverTimestamp()
+    }, { merge: true })
+
+    return {
+      id: uid,
+      ...profileData
+    }
+
+  } catch (error) {
+
+    throw new Error(`Failed to update profile: ${error.message}`)
+
+  }
+
+}
 // ==================== UTILITY FUNCTIONS ====================
 
 export const getProductWithVariants = async (productId) => {
@@ -615,6 +640,12 @@ export const createOrder = async (orderData) => {
 
     const docRef = await addDoc(ordersRef, {
 
+      userId:
+        orderData.userId || '',
+
+      orderNumber:
+        orderData.orderNumber || `ORD-${Date.now()}`,
+
       customerName:
         orderData.customerName || 'Customer',
 
@@ -624,9 +655,24 @@ export const createOrder = async (orderData) => {
       phone:
         orderData.phone || '',
 
+      shippingAddress:
+        orderData.shippingAddress || '',
+
+      addressDetails:
+        orderData.addressDetails || {},
+
+      deliveryNotes:
+        orderData.deliveryNotes || '',
+
       items: formattedItems,
 
       totalAmount,
+
+      itemCount:
+        formattedItems.reduce(
+          (acc, item) => acc + item.quantity,
+          0
+        ),
 
       paymentMethod:
         orderData.paymentMethod || 'cod',
@@ -654,6 +700,47 @@ export const createOrder = async (orderData) => {
     )
 
   }
+
+}
+
+export const subscribeToUserOrders = (
+  uid,
+  email,
+  callback
+) => {
+
+  if (!uid && !email) {
+
+    callback([])
+
+    return () => {}
+
+  }
+
+  const q = uid
+    ? query(ordersRef, where('userId', '==', uid))
+    : query(ordersRef, where('email', '==', email))
+
+  return onSnapshot(q, (snapshot) => {
+
+    const orders = snapshot.docs
+      .map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+      .sort((a, b) => {
+        const dateA =
+          a.createdAt?.toDate?.()?.getTime?.() || 0
+
+        const dateB =
+          b.createdAt?.toDate?.()?.getTime?.() || 0
+
+        return dateB - dateA
+      })
+
+    callback(orders)
+
+  })
 
 }
 
