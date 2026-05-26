@@ -13,7 +13,10 @@ import {
   Accessibility,
   User,
   LogOut,
-  ShoppingCart
+  ShoppingCart,
+  ChevronDown,
+  Settings,
+  Package2
 } from 'lucide-react'
 
 import {
@@ -32,6 +35,7 @@ const EcommerceLayout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [accessibilityOpen, setAccessibilityOpen] = useState(false)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   const { speak } = useAccessibility()
 
@@ -61,11 +65,6 @@ const EcommerceLayout = () => {
       label: 'About',
       icon: Info
     },
-    {
-      path: '/my-orders',
-      label: 'My Orders',
-      icon: ShoppingBag
-    }
   ]
 
   const handleNavClick = (label) => {
@@ -80,7 +79,7 @@ const EcommerceLayout = () => {
 
     try {
 
-     localStorage.removeItem('cart')
+      localStorage.removeItem('cart')
 
       await logout()
 
@@ -97,7 +96,6 @@ const EcommerceLayout = () => {
     }
 
   }
-
   return (
 
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -198,45 +196,252 @@ const EcommerceLayout = () => {
                 <Accessibility className="w-5 h-5 text-gray-700" />
               </button>
 
-              {/* ================= USER ================= */}
+            {/* ================= USER ================= */}
 
-              {user ? (
+            {user ? (
 
-                <div className="hidden sm:flex items-center gap-3 ml-2">
+              <div className="relative hidden sm:block">
 
-                  <div className="text-right">
+                {/* PROFILE BUTTON */}
+
+                <button
+                  onClick={() => setProfileOpen(!profileOpen)}
+                  className="
+                    flex items-center gap-3
+                    px-3 py-2 rounded-2xl
+                    hover:bg-gray-100
+                    transition
+                  "
+                >
+
+                  {/* PROFILE ICON */}
+
+                  <div className="
+                    w-11 h-11 rounded-full
+                    bg-green-100
+                    flex items-center justify-center
+                  ">
+
+                    <User className="w-5 h-5 text-green-700" />
+
+                  </div>
+
+                  {/* USER INFO */}
+
+                  <div className="text-left">
 
                     <p className="text-sm font-semibold text-gray-900">
                       Welcome
                     </p>
 
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 max-w-[150px] truncate">
                       {user.email}
                     </p>
 
                   </div>
 
-                  <button
-                    onClick={() => setShowLogoutModal(true)}
-                    className="p-2 rounded-xl hover:bg-red-50 hover:text-red-600 transition"
+                  <ChevronDown
+                    className={`w-4 h-4 text-gray-500 transition ${
+                      profileOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+
+                </button>
+
+                {/* DROPDOWN */}
+
+                {profileOpen && (
+
+                  <div
+                    className="
+                      absolute right-0 mt-3
+                      w-72 bg-white
+                      rounded-3xl shadow-2xl
+                      border border-gray-100
+                      overflow-hidden
+                      z-50
+                    "
                   >
-                    <LogOut className="w-5 h-5" />
-                  </button>
 
-                </div>
+                    {/* TOP USER INFO */}
 
-              ) : (
+                    <div className="p-5 border-b border-gray-100">
 
-                <Link
-                  to="/signin"
-                  className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition"
-                >
-                  <User className="w-4 h-4" />
+                      <div className="flex items-center gap-4">
 
-                  Sign In
-                </Link>
+                        <div className="
+                          w-14 h-14 rounded-full
+                          bg-green-100
+                          flex items-center justify-center
+                        ">
 
-              )}
+                          <User className="w-7 h-7 text-green-700" />
+
+                        </div>
+
+                        <div>
+
+                          <h3 className="font-bold text-gray-900">
+                            Customer Account
+                          </h3>
+
+                          <p className="text-sm text-gray-500 break-all">
+                            {user.email}
+                          </p>
+
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                    {/* MENU */}
+
+                    <div className="p-3 space-y-2">
+
+                      {/* PROFILE */}
+
+                      <Link
+                        to="/profile"
+                        onClick={() => setProfileOpen(false)}
+                        className="
+                          flex items-center gap-3
+                          px-4 py-3 rounded-2xl
+                          hover:bg-gray-100
+                          transition
+                        "
+                      >
+
+                        <User className="w-5 h-5 text-gray-600" />
+
+                        <div>
+
+                          <p className="font-medium text-gray-900">
+                            Profile
+                          </p>
+
+                          <p className="text-xs text-gray-500">
+                            View account information
+                          </p>
+
+                        </div>
+
+                      </Link>
+
+                      {/* ORDERS */}
+
+                      <Link
+                        to="/my-orders"
+                        onClick={() => setProfileOpen(false)}
+                        className="
+                          flex items-center gap-3
+                          px-4 py-3 rounded-2xl
+                          hover:bg-gray-100
+                          transition
+                        "
+                      >
+
+                        <Package2 className="w-5 h-5 text-gray-600" />
+
+                        <div>
+
+                          <p className="font-medium text-gray-900">
+                            My Orders
+                          </p>
+
+                          <p className="text-xs text-gray-500">
+                            Track your orders
+                          </p>
+
+                        </div>
+
+                      </Link>
+
+                      {/* SETTINGS */}
+
+                      <Link
+                        to="/profile"
+                        onClick={() => setProfileOpen(false)}
+                        className="
+                          flex items-center gap-3
+                          px-4 py-3 rounded-2xl
+                          hover:bg-gray-100
+                          transition
+                        "
+                      >
+
+                        <Settings className="w-5 h-5 text-gray-600" />
+
+                        <div>
+
+                          <p className="font-medium text-gray-900">
+                            Account Settings
+                          </p>
+
+                          <p className="text-xs text-gray-500">
+                            Manage your information
+                          </p>
+
+                        </div>
+
+                      </Link>
+
+                    </div>
+
+                    {/* LOGOUT */}
+
+                    <div className="p-3 border-t border-gray-100">
+
+                      <button
+                        onClick={() => {
+                          setProfileOpen(false)
+                          setShowLogoutModal(true)
+                        }}
+                        className="
+                          w-full flex items-center gap-3
+                          px-4 py-3 rounded-2xl
+                          text-red-600
+                          hover:bg-red-50
+                          transition
+                        "
+                      >
+
+                        <LogOut className="w-5 h-5" />
+
+                        <div className="text-left">
+
+                          <p className="font-medium">
+                            Logout
+                          </p>
+
+                          <p className="text-xs text-red-400">
+                            Sign out this account
+                          </p>
+
+                        </div>
+
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                )}
+
+              </div>
+
+            ) : (
+
+              <Link
+                to="/signin"
+                className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition"
+              >
+                <User className="w-4 h-4" />
+
+                Sign In
+              </Link>
+
+            )}
 
               {/* ================= MOBILE MENU BUTTON ================= */}
 

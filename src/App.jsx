@@ -24,6 +24,7 @@ import Cart from './pages/ecommerce/Cart'
 import Checkout from './pages/ecommerce/Checkout'
 import SignIn from './pages/ecommerce/SignIn'
 import SignUp from './pages/ecommerce/SignUp'
+import Profile from './pages/ecommerce/Profile'
 
 function App() {
   return (
@@ -108,6 +109,9 @@ function App() {
           path="/checkout"
           element={<Checkout />}
         />
+
+        <Route path="/profile" 
+        element={<Profile />} />
 
       </Route>
 

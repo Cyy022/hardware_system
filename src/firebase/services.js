@@ -1,21 +1,22 @@
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  getDocs, 
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
   getDoc,
-  query, 
-  where, 
-  orderBy, 
+  query,
+  where,
+  orderBy,
   onSnapshot,
   serverTimestamp,
   writeBatch,
   increment,
   Timestamp
 } from 'firebase/firestore'
-import { db } from './config'
+
+import { db } from '../firebase/config'
 
 // Collection references
 const productsRef = collection(db, 'products')
@@ -521,6 +522,35 @@ export const getUserByEmail = async (email) => {
   }
 }
 
+// ==================== USER PROFILE ====================
+export const getUserProfile = async (uid) => {
+
+  try {
+
+    const docRef = doc(db, 'users', uid)
+
+    const docSnap = await getDoc(docRef)
+
+    if (docSnap.exists()) {
+
+      return {
+        id: docSnap.id,
+        ...docSnap.data()
+      }
+
+    }
+
+    return null
+
+  } catch (error) {
+
+    console.log(error)
+
+    return null
+
+  }
+
+}
 // ==================== UTILITY FUNCTIONS ====================
 
 export const getProductWithVariants = async (productId) => {
