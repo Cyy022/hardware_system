@@ -14,7 +14,8 @@ import {
   setDoc,
   writeBatch,
   increment,
-  Timestamp
+  Timestamp,
+  arrayUnion
 } from 'firebase/firestore'
 
 import { db } from '../firebase/config'
@@ -29,6 +30,8 @@ const usersRef = collection(db, 'users')
 const purchaseOrdersRef = collection(db, 'purchaseOrders')
 const stockInHistoryRef = collection(db, 'stockInHistory')
 const ordersRef = collection(db, 'orders')
+const productReviewsRef = collection(db, 'productReviews')
+const refundRequestsRef = collection(db, 'refundRequests')
 
 // ==================== PRODUCTS ====================
 
@@ -293,6 +296,13 @@ export const receivePurchaseOrder = async (purchaseOrderId) => {
     }
 
     const batch = writeBatch(db)
+    const receivedItems = purchaseOrder.items.map((item) => ({
+      ...item,
+      orderedQuantity: Number(item.quantity || 0),
+      receivedQuantity: Number(item.quantity || 0),
+      cancelledQuantity: 0,
+      itemStatus: 'Received'
+    }))
 
     // UPDATE VARIANT STOCKS
     for (const item of purchaseOrder.items) {
@@ -307,17 +317,21 @@ export const receivePurchaseOrder = async (purchaseOrderId) => {
     // UPDATE PURCHASE ORDER STATUS
     batch.update(purchaseOrderRef, {
       status: 'Received',
+      items: receivedItems,
       receivedAt: serverTimestamp()
     })
 
     // SAVE STOCK HISTORY
-    const historyRef = doc(collection(db, 'stockHistory'))
+    const historyRef = doc(collection(db, 'stockInHistory'))
 
     batch.set(historyRef, {
+      stockInId: historyRef.id,
+      purchaseOrderId,
       poNumber: purchaseOrder.poNumber,
       supplierName: purchaseOrder.supplierName,
-      items: purchaseOrder.items,
+      items: receivedItems,
       totalAmount: purchaseOrder.totalAmount || 0,
+      totalReceivedAmount: purchaseOrder.totalAmount || 0,
       receivedBy: purchaseOrder.email || '',
       createdAt: serverTimestamp(),
       status: 'Completed'
@@ -333,12 +347,227 @@ export const receivePurchaseOrder = async (purchaseOrderId) => {
   }
 }
 
+const getPurchaseOrderStatus = (items) => {
+  const normalizedItems = items || []
+
+  if (normalizedItems.length === 0) return 'Pending'
+
+  const allCancelled = normalizedItems.every(
+    (item) => item.itemStatus === 'Cancelled'
+  )
+
+  if (allCancelled) return 'Cancelled'
+
+  const allClosed = normalizedItems.every(
+    (item) =>
+      ['Received', 'Cancelled', 'Partially Cancelled'].includes(item.itemStatus) ||
+      Number(item.receivedQuantity || 0) >= Number(item.quantity || 0)
+  )
+
+  if (allClosed) {
+    const allReceived = normalizedItems.every(
+      (item) =>
+        Number(item.receivedQuantity || 0) >= Number(item.quantity || 0)
+    )
+
+    return allReceived ? 'Received' : 'Completed'
+  }
+
+  const hasReceived = normalizedItems.some(
+    (item) => Number(item.receivedQuantity || 0) > 0
+  )
+  const hasCancelled = normalizedItems.some(
+    (item) => item.itemStatus === 'Cancelled'
+  )
+
+  return hasReceived || hasCancelled
+    ? 'Partially Received'
+    : 'Pending'
+}
+
+const buildStockInHistoryItems = (items) =>
+  (items || []).map((item) => {
+    const orderedQuantity = Number(item.quantity || 0)
+    const receivedQuantity = Number(item.receivedQuantity || 0)
+    const cancelledQuantity = Number(item.cancelledQuantity || 0)
+
+    return {
+      ...item,
+      orderedQuantity,
+      receivedQuantity,
+      cancelledQuantity,
+      itemStatus: item.itemStatus || 'Pending',
+      receivedAmount: receivedQuantity * Number(item.costPrice || 0)
+    }
+  })
+
+export const updatePurchaseOrderItemStatus = async ({
+  purchaseOrderId,
+  itemIndex,
+  action,
+  receivedQuantity = 0
+}) => {
+
+  try {
+
+    const purchaseOrderRef = doc(db, 'purchaseOrders', purchaseOrderId)
+    const purchaseOrderSnap = await getDoc(purchaseOrderRef)
+
+    if (!purchaseOrderSnap.exists()) {
+      throw new Error('Purchase order not found')
+    }
+
+    const purchaseOrder = purchaseOrderSnap.data()
+    const items = [...(purchaseOrder.items || [])]
+    const item = items[itemIndex]
+
+    if (!item) {
+      throw new Error('Purchase order item not found')
+    }
+
+    const orderedQuantity = Number(item.quantity || 0)
+    const currentReceived = Number(item.receivedQuantity || 0)
+    const remainingQuantity = Math.max(
+      orderedQuantity - currentReceived,
+      0
+    )
+
+    if (remainingQuantity <= 0 && action !== 'cancel') {
+      throw new Error('Item is already fully received')
+    }
+
+    let quantityToReceive = 0
+    let updatedItem = {
+      ...item,
+      orderedQuantity,
+      receivedQuantity: currentReceived,
+      cancelledQuantity: Number(item.cancelledQuantity || 0),
+      itemStatus: item.itemStatus || 'Pending'
+    }
+
+    if (action === 'receive') {
+      quantityToReceive = remainingQuantity
+      updatedItem.receivedQuantity = orderedQuantity
+      updatedItem.cancelledQuantity = 0
+      updatedItem.itemStatus = 'Received'
+    } else if (action === 'partial') {
+      quantityToReceive = Number(receivedQuantity || 0)
+
+      if (quantityToReceive <= 0) {
+        throw new Error('Enter received quantity')
+      }
+
+      if (quantityToReceive > remainingQuantity) {
+        throw new Error(`Only ${remainingQuantity} remaining for this item`)
+      }
+
+      updatedItem.receivedQuantity = currentReceived + quantityToReceive
+      updatedItem.itemStatus =
+        updatedItem.receivedQuantity >= orderedQuantity
+          ? 'Received'
+          : 'Partial'
+    } else if (action === 'cancel') {
+      updatedItem.cancelledQuantity = Math.max(
+        orderedQuantity - currentReceived,
+        0
+      )
+      updatedItem.itemStatus =
+        currentReceived > 0
+          ? 'Partially Cancelled'
+          : 'Cancelled'
+    } else {
+      throw new Error('Invalid item action')
+    }
+
+    items[itemIndex] = updatedItem
+
+    const status = getPurchaseOrderStatus(items)
+    const batch = writeBatch(db)
+
+    if (quantityToReceive > 0 && item.variantId) {
+      batch.update(doc(db, 'variants', item.variantId), {
+        quantity: increment(quantityToReceive),
+        updatedAt: serverTimestamp()
+      })
+    }
+
+    batch.update(purchaseOrderRef, {
+      items,
+      status,
+      receivedAt:
+        ['Received', 'Completed', 'Cancelled'].includes(status)
+          ? serverTimestamp()
+          : null,
+      updatedAt: serverTimestamp()
+    })
+
+    if (['Received', 'Completed', 'Cancelled'].includes(status)) {
+      const historyItems = buildStockInHistoryItems(items)
+      const totalReceivedAmount = historyItems.reduce(
+        (sum, historyItem) =>
+          sum + Number(historyItem.receivedAmount || 0),
+        0
+      )
+
+      batch.set(
+        doc(db, 'stockInHistory', purchaseOrderId),
+        {
+          stockInId: purchaseOrderId,
+          purchaseOrderId,
+          poNumber: purchaseOrder.poNumber,
+          supplierName: purchaseOrder.supplierName,
+          items: historyItems,
+          totalAmount: purchaseOrder.totalAmount || 0,
+          totalReceivedAmount,
+          receivedBy: purchaseOrder.receivedBy || purchaseOrder.email || 'Admin',
+          status,
+          completedAt: serverTimestamp(),
+          createdAt: serverTimestamp()
+        },
+        { merge: true }
+      )
+    }
+
+    await batch.commit()
+
+    return true
+
+  } catch (error) {
+
+    throw new Error(
+      `Failed to update purchase item: ${error.message}`
+    )
+
+  }
+
+}
+
 export const cancelPurchaseOrder = async (purchaseOrderId) => {
   try {
     const poRef = doc(db, 'purchaseOrders', purchaseOrderId)
+    const poSnap = await getDoc(poRef)
+
+    if (!poSnap.exists()) {
+      throw new Error('Purchase order not found')
+    }
+
+    const purchaseOrder = poSnap.data()
+    const items = (purchaseOrder.items || []).map((item) => {
+      const receivedQuantity = Number(item.receivedQuantity || 0)
+      const orderedQuantity = Number(item.quantity || 0)
+
+      return {
+        ...item,
+        orderedQuantity,
+        receivedQuantity,
+        cancelledQuantity: Math.max(orderedQuantity - receivedQuantity, 0),
+        itemStatus: receivedQuantity > 0 ? 'Partially Cancelled' : 'Cancelled'
+      }
+    })
 
     await updateDoc(poRef, {
       status: 'Cancelled',
+      items,
       updatedAt: serverTimestamp()
     })
 
@@ -817,6 +1046,150 @@ export const updateOrderStatus = async (
 
     throw new Error(
       `Failed to update order: ${error.message}`
+    )
+
+  }
+
+}
+
+export const submitProductReview = async ({
+  orderId,
+  userId,
+  customerName,
+  email,
+  item,
+  rating,
+  comment
+}) => {
+
+  try {
+
+    const reviewKey =
+      `${item.productId || 'product'}-${item.variantId || 'default'}`
+
+    const reviewRef = doc(
+      productReviewsRef,
+      `${orderId}-${reviewKey}`
+    )
+
+    await setDoc(reviewRef, {
+      orderId,
+      userId: userId || '',
+      customerName: customerName || 'Customer',
+      email: email || '',
+      productId: item.productId || '',
+      productName: item.productName || '',
+      variantId: item.variantId || '',
+      variantName: item.variantName || 'Default',
+      rating: Number(rating) || 5,
+      comment: comment || '',
+      status: 'published',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }, { merge: true })
+
+    await updateDoc(doc(db, 'orders', orderId), {
+      reviewedItemKeys: arrayUnion(reviewKey),
+      updatedAt: serverTimestamp()
+    })
+
+    return true
+
+  } catch (error) {
+
+    throw new Error(
+      `Failed to submit review: ${error.message}`
+    )
+
+  }
+
+}
+
+export const requestOrderRefund = async ({
+  orderId,
+  userId,
+  customerName,
+  email,
+  phone,
+  reason,
+  details,
+  amount
+}) => {
+
+  try {
+
+    const refundRef = await addDoc(refundRequestsRef, {
+      orderId,
+      userId: userId || '',
+      customerName: customerName || 'Customer',
+      email: email || '',
+      phone: phone || '',
+      reason: reason || '',
+      details: details || '',
+      amount: Number(amount || 0),
+      status: 'pending',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    })
+
+    await updateDoc(doc(db, 'orders', orderId), {
+      refundRequest: {
+        id: refundRef.id,
+        reason: reason || '',
+        details: details || '',
+        amount: Number(amount || 0),
+        status: 'pending',
+        createdAt: serverTimestamp()
+      },
+      refundStatus: 'pending',
+      updatedAt: serverTimestamp()
+    })
+
+    return {
+      id: refundRef.id
+    }
+
+  } catch (error) {
+
+    throw new Error(
+      `Failed to request refund: ${error.message}`
+    )
+
+  }
+
+}
+
+export const updateRefundRequestStatus = async (
+  orderId,
+  refundRequestId,
+  status
+) => {
+
+  try {
+
+    const batch = writeBatch(db)
+
+    batch.update(doc(db, 'orders', orderId), {
+      refundStatus: status,
+      'refundRequest.status': status,
+      updatedAt: serverTimestamp()
+    })
+
+    if (refundRequestId) {
+      batch.update(doc(db, 'refundRequests', refundRequestId), {
+        status,
+        updatedAt: serverTimestamp()
+      })
+    }
+
+    await batch.commit()
+
+    return true
+
+  } catch (error) {
+
+    throw new Error(
+      `Failed to update refund request: ${error.message}`
     )
 
   }

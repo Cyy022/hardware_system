@@ -34,6 +34,26 @@ import {
 
 const ADMIN_EMAIL = 'cyruscabanes@gmail.com'
 
+const getPasswordError = (password) => {
+  if (password.length < 8) {
+    return 'Password must be at least 8 characters.'
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    return 'Password must include at least one uppercase letter.'
+  }
+
+  if (!/[a-z]/.test(password)) {
+    return 'Password must include at least one lowercase letter.'
+  }
+
+  if (!/[0-9]/.test(password)) {
+    return 'Password must include at least one number.'
+  }
+
+  return ''
+}
+
 const SignUp = () => {
   const navigate = useNavigate()
 
@@ -83,8 +103,10 @@ const SignUp = () => {
       return false
     }
 
-    if (formData.password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters.')
+    const passwordError = getPasswordError(formData.password)
+
+    if (passwordError) {
+      setErrorMessage(passwordError)
 
       return false
     }
@@ -154,7 +176,7 @@ const SignUp = () => {
       } else if (error.code === 'auth/invalid-email') {
         setErrorMessage('Please enter a valid email address.')
       } else if (error.code === 'auth/weak-password') {
-        setErrorMessage('Password must be at least 6 characters.')
+        setErrorMessage('Password is too weak. Use at least 8 characters with uppercase, lowercase, and a number.')
       } else {
         setErrorMessage('Registration failed. Please try again.')
       }
@@ -228,6 +250,9 @@ const SignUp = () => {
                       className="w-full rounded-xl border border-gray-200 py-3 pl-12 pr-4 outline-none focus:border-green-500"
                     />
                   </div>
+                  <p className="text-xs text-gray-500">
+                    Use 8+ characters with uppercase, lowercase, and a number.
+                  </p>
                 </label>
 
                 <label className="space-y-2">
@@ -306,7 +331,7 @@ const SignUp = () => {
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
-                      placeholder="At least 6 characters"
+                      placeholder="At least 8 characters"
                       className="w-full rounded-xl border border-gray-200 py-3 pl-12 pr-12 outline-none focus:border-green-500"
                     />
                     <button

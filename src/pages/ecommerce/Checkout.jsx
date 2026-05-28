@@ -193,6 +193,7 @@ const Checkout = () => {
   ), [cart])
 
   const cityOptions = ADDRESS_OPTIONS[form.province] || []
+  const hasUnselectedVariants = cart.some((item) => !item?.variantId)
 
   const updateForm = (field, value) => {
     if (field === 'province') {
@@ -245,6 +246,14 @@ const Checkout = () => {
 
       if (cart.length === 0) {
         toast.error('Your cart is empty.')
+
+        return
+      }
+
+      if (hasUnselectedVariants) {
+        toast.error('Please select variants in your cart before checkout.')
+
+        navigate('/cart')
 
         return
       }
@@ -359,6 +368,37 @@ const Checkout = () => {
           >
             <ArrowLeft className="w-5 h-5" />
             Continue Shopping
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  if (hasUnselectedVariants) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-16">
+        <div className="bg-white p-8 sm:p-10 rounded-3xl border border-gray-200 text-center max-w-lg w-full">
+          <ShoppingBag className="w-16 h-16 mx-auto text-green-600 mb-6" />
+
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            Select Variants First
+          </h1>
+
+          <p className="text-gray-500 mb-8">
+            Choose a variant for every cart item before proceeding to checkout.
+          </p>
+
+          <Link
+            to="/cart"
+            className="
+              inline-flex items-center gap-2
+              px-6 py-4 rounded-2xl
+              bg-green-600 text-white
+              font-semibold
+            "
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Back to Cart
           </Link>
         </div>
       </div>

@@ -19,7 +19,8 @@ import {
   Menu,
   X,
   Accessibility,
-  Users
+  Users,
+  BarChart3
 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
@@ -68,6 +69,11 @@ const [showLogoutModal, setShowLogoutModal] = useState(false)
       path: '/admin/sales-reports',
       label: 'Sales Reports',
       icon: FileText
+    },
+    {
+      path: '/admin/analytics',
+      label: 'Analytics',
+      icon: BarChart3
     },
     {
       path: '/admin/suppliers',

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Search, Filter, Package, AlertTriangle, Check, X } from 'lucide-react'
+import { Search, Filter, Package, ShoppingCart } from 'lucide-react'
 import { useProducts } from '../../hooks/useProducts'
 import { useAuth } from '../../context/AuthContext'
 import { useAccessibility } from '../../context/AccessibilityContext'
@@ -51,7 +51,7 @@ const Products = () => {
     speak(`Viewing ${product.name}`)
   }
 
-  const handleAddToCart = (product, minPrice) => {
+  const handleAddToCart = (product) => {
     if (!user) {
       toast.error('Please sign in first before adding products to your cart.')
 
@@ -65,20 +65,56 @@ const Products = () => {
       return
     }
 
+    const totalStock =
+      product.variants?.reduce(
+        (sum, variant) => sum + Number(variant.quantity || 0),
+        0
+      ) || 0
+
+    if (totalStock <= 0) {
+      toast.error('This product is out of stock.')
+
+      return
+    }
+
     const existingCart =
       JSON.parse(localStorage.getItem('cart')) || []
 
+    const cartId = `${product.id}-pending`
+
     const existingItem = existingCart.find(
-      item => item.id === product.id
+      item => item.cartId === cartId ||
+        (
+          (item.productId || item.id) === product.id &&
+          !item.variantId
+        )
     )
 
     if (existingItem) {
+      if (existingItem.quantity >= totalStock) {
+        toast.error(`Only ${totalStock} stock available for ${product.name}.`)
+
+        return
+      }
+
       existingItem.quantity += 1
     } else {
       existingCart.push({
-        ...product,
+        id: product.id,
+        cartId,
+        productId: product.id,
+        name: product.name,
+        productName: product.name,
+        category: product.category,
+        image: product.image || '',
+        variantId: '',
+        variantName: '',
+        sku: '',
+        size: '',
+        unit: '',
+        stock: totalStock,
         quantity: 1,
-        price: minPrice
+        price: 0
       })
     }
 
@@ -87,9 +123,9 @@ const Products = () => {
       JSON.stringify(existingCart)
     )
 
-    speak(`${product.name} added to cart`)
+    speak(`${product.name} added to cart. Select a variant in your cart before checkout.`)
 
-    toast.success('Product added to cart!', {
+    toast.success('Added to cart. Select variant in cart.', {
       duration: 3000,
       style: {
         borderRadius: '16px',
@@ -229,7 +265,7 @@ const Products = () => {
   <button
     onClick={(e) => {
       e.stopPropagation()
-      handleAddToCart(product, minPrice)
+      handleAddToCart(product)
     }}
     disabled={totalStock <= 0}
     className="
@@ -239,7 +275,10 @@ const Products = () => {
       disabled:bg-gray-300 disabled:cursor-not-allowed
     "
   >
-    Add to Cart
+    <span className="inline-flex items-center justify-center gap-2">
+      <ShoppingCart className="w-4 h-4" />
+      Add
+    </span>
   </button>
 
 </div>
@@ -283,6 +322,7 @@ const Products = () => {
                 ) : (
                   selectedProduct.variants?.map(variant => {
                     const status = getStockStatus(variant.quantity, variant.reorderLevel)
+                    const isAvailable = Number(variant.quantity || 0) > 0
                     return (
                       <div 
                         key={variant.id} 
@@ -306,6 +346,20 @@ const Products = () => {
                         <div className="mt-2 text-sm text-gray-500">
                           Stock: {variant.quantity} units (Reorder at: {variant.reorderLevel})
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => handleAddToCart(selectedProduct)}
+                          disabled={!isAvailable}
+                          className="
+                            mt-4 w-full inline-flex items-center justify-center gap-2
+                            rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold
+                            text-white hover:bg-green-700 disabled:bg-gray-300
+                            disabled:cursor-not-allowed transition
+                          "
+                        >
+                          <ShoppingCart className="w-4 h-4" />
+                          Add to Cart
+                        </button>
                       </div>
                     )
                   })

@@ -17,7 +17,8 @@ import toast from 'react-hot-toast'
 import {
   completeOrder,
   subscribeToOrders,
-  updateOrderStatus
+  updateOrderStatus,
+  updateRefundRequestStatus
 } from '../../firebase/services'
 
 const formatCurrency = (amount) =>
@@ -111,6 +112,25 @@ const Orders = () => {
     } catch (error) {
       console.log(error)
       toast.error('Unable to update order.')
+    } finally {
+      setUpdatingId('')
+    }
+  }
+
+  const handleRefundUpdate = async (order, status) => {
+    setUpdatingId(`refund-${order.id}`)
+
+    try {
+      await updateRefundRequestStatus(
+        order.id,
+        order.refundRequest?.id,
+        status
+      )
+
+      toast.success('Refund request updated.')
+    } catch (error) {
+      console.log(error)
+      toast.error('Unable to update refund request.')
     } finally {
       setUpdatingId('')
     }
@@ -298,6 +318,56 @@ const Orders = () => {
                   )}
                 </div>
               </div>
+
+              {order.refundStatus && (
+                <div className="mt-5 rounded-2xl border border-red-100 bg-red-50 p-4">
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div>
+                      <p className="font-bold text-red-800">
+                        Refund Request: {order.refundStatus}
+                      </p>
+                      <p className="text-sm text-red-700 mt-1">
+                        Reason: {order.refundRequest?.reason || 'No reason provided'}
+                      </p>
+                      {order.refundRequest?.details && (
+                        <p className="text-sm text-red-700 mt-1">
+                          Details: {order.refundRequest.details}
+                        </p>
+                      )}
+                    </div>
+
+                    {order.refundStatus === 'pending' && (
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <button
+                          type="button"
+                          disabled={updatingId === `refund-${order.id}`}
+                          onClick={() => handleRefundUpdate(order, 'approved')}
+                          className="
+                            rounded-xl bg-green-600 px-4 py-2 text-sm
+                            font-semibold text-white hover:bg-green-700
+                            disabled:opacity-50 disabled:cursor-not-allowed
+                          "
+                        >
+                          Approve
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={updatingId === `refund-${order.id}`}
+                          onClick={() => handleRefundUpdate(order, 'rejected')}
+                          className="
+                            rounded-xl bg-red-600 px-4 py-2 text-sm
+                            font-semibold text-white hover:bg-red-700
+                            disabled:opacity-50 disabled:cursor-not-allowed
+                          "
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="mt-5 flex flex-col sm:flex-row sm:flex-wrap gap-3">
                 <button

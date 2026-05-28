@@ -11,13 +11,23 @@ import {
   MapPin,
   Package,
   PackageCheck,
+  RotateCcw,
+  Send,
   ShoppingBag,
+  Star,
   Truck
 } from 'lucide-react'
 
-import { useAuth } from '../../context/AuthContext'
+import toast from 'react-hot-toast'
 
-import { subscribeToUserOrders } from '../../firebase/services'
+import { useAuth } from '../../context/AuthContext'
+import Modal from '../../components/common/Modal'
+
+import {
+  requestOrderRefund,
+  submitProductReview,
+  subscribeToUserOrders
+} from '../../firebase/services'
 
 const formatCurrency = (amount) =>
   `PHP ${Number(amount || 0).toLocaleString()}`
@@ -96,6 +106,9 @@ const getTimelineIndex = (status) => {
   return index < 0 ? 0 : index
 }
 
+const getReviewKey = (item) =>
+  `${item.productId || 'product'}-${item.variantId || 'default'}`
+
 const MyOrders = () => {
   const { user } = useAuth()
   const location = useLocation()
@@ -103,6 +116,17 @@ const MyOrders = () => {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState('all')
+  const [selectedReview, setSelectedReview] = useState(null)
+  const [selectedRefund, setSelectedRefund] = useState(null)
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    comment: ''
+  })
+  const [refundForm, setRefundForm] = useState({
+    reason: 'Damaged item',
+    details: ''
+  })
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (!user?.uid && !user?.email) {
@@ -138,6 +162,110 @@ const MyOrders = () => {
     preparing: orders.filter(order => order.orderStatus === 'preparing').length,
     completed: orders.filter(order => order.orderStatus === 'completed').length
   }), [orders])
+
+  const openReview = (order, item) => {
+    setSelectedReview({
+      order,
+      item
+    })
+    setReviewForm({
+      rating: 5,
+      comment: ''
+    })
+  }
+
+  const closeReview = () => {
+    setSelectedReview(null)
+    setReviewForm({
+      rating: 5,
+      comment: ''
+    })
+  }
+
+  const openRefund = (order) => {
+    setSelectedRefund(order)
+    setRefundForm({
+      reason: 'Damaged item',
+      details: ''
+    })
+  }
+
+  const closeRefund = () => {
+    setSelectedRefund(null)
+    setRefundForm({
+      reason: 'Damaged item',
+      details: ''
+    })
+  }
+
+  const handleSubmitReview = async (event) => {
+    event.preventDefault()
+
+    if (!selectedReview) return
+
+    if (!reviewForm.comment.trim()) {
+      toast.error('Please write a short review.')
+
+      return
+    }
+
+    try {
+      setSubmitting(true)
+
+      await submitProductReview({
+        orderId: selectedReview.order.id,
+        userId: user.uid,
+        customerName: selectedReview.order.customerName,
+        email: selectedReview.order.email,
+        item: selectedReview.item,
+        rating: reviewForm.rating,
+        comment: reviewForm.comment.trim()
+      })
+
+      toast.success('Review submitted. Thank you!')
+      closeReview()
+    } catch (error) {
+      console.log(error)
+      toast.error('Unable to submit review.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleRefundRequest = async (event) => {
+    event.preventDefault()
+
+    if (!selectedRefund) return
+
+    if (!refundForm.details.trim()) {
+      toast.error('Please add refund details.')
+
+      return
+    }
+
+    try {
+      setSubmitting(true)
+
+      await requestOrderRefund({
+        orderId: selectedRefund.id,
+        userId: user.uid,
+        customerName: selectedRefund.customerName,
+        email: selectedRefund.email,
+        phone: selectedRefund.phone,
+        reason: refundForm.reason,
+        details: refundForm.details.trim(),
+        amount: selectedRefund.totalAmount
+      })
+
+      toast.success('Refund request sent.')
+      closeRefund()
+    } catch (error) {
+      console.log(error)
+      toast.error('Unable to request refund.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   if (!user) {
     return (
@@ -326,10 +454,14 @@ const MyOrders = () => {
                       </div>
 
                       <div className="space-y-3">
-                        {order.items?.map((item, index) => (
+                        {order.items?.map((item, index) => {
+                          const isReviewed =
+                            order.reviewedItemKeys?.includes(getReviewKey(item))
+
+                          return (
                           <div
                             key={`${item.productName}-${index}`}
-                            className="flex justify-between gap-4 text-sm"
+                            className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 text-sm"
                           >
                             <div>
                               <p className="font-semibold text-gray-900">
@@ -338,6 +470,23 @@ const MyOrders = () => {
                               <p className="text-gray-500">
                                 {item.variantName || 'Default'} / Qty {item.quantity}
                               </p>
+
+                              {order.orderStatus === 'completed' && (
+                                <button
+                                  type="button"
+                                  onClick={() => openReview(order, item)}
+                                  disabled={isReviewed}
+                                  className="
+                                    mt-3 inline-flex items-center gap-2 rounded-xl
+                                    border border-gray-200 bg-white px-4 py-2
+                                    text-xs font-bold text-gray-700 hover:bg-gray-50
+                                    disabled:cursor-not-allowed disabled:opacity-60
+                                  "
+                                >
+                                  <Star className="w-4 h-4 text-yellow-500" />
+                                  {isReviewed ? 'Reviewed' : 'Review Product'}
+                                </button>
+                              )}
                             </div>
 
                             <p className="font-semibold text-gray-900 whitespace-nowrap">
@@ -347,7 +496,8 @@ const MyOrders = () => {
                               )}
                             </p>
                           </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </div>
 
@@ -370,12 +520,199 @@ const MyOrders = () => {
                       )}
                     </div>
                   </div>
+
+                  {order.orderStatus === 'completed' && (
+                    <div className="mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                      <div>
+                        <p className="font-bold text-gray-900">
+                          Refund
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {order.refundStatus
+                            ? `Refund request status: ${order.refundStatus}`
+                            : 'Request a refund if there is an issue with this completed order.'}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => openRefund(order)}
+                        disabled={Boolean(order.refundStatus)}
+                        className="
+                          inline-flex items-center justify-center gap-2
+                          rounded-xl bg-red-600 px-5 py-3 text-sm
+                          font-bold text-white hover:bg-red-700
+                          disabled:cursor-not-allowed disabled:opacity-60
+                        "
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        {order.refundStatus ? 'Request Sent' : 'Request Refund'}
+                      </button>
+                    </div>
+                  )}
                 </article>
               )
             })}
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={Boolean(selectedReview)}
+        onClose={closeReview}
+        title="Product Review"
+        size="md"
+      >
+        {selectedReview && (
+          <form onSubmit={handleSubmitReview} className="space-y-5">
+            <div>
+              <p className="font-bold text-gray-900">
+                {selectedReview.item.productName}
+              </p>
+              <p className="text-sm text-gray-500">
+                {selectedReview.item.variantName || 'Default'}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-sm font-semibold text-gray-700 mb-2">
+                Rating
+              </p>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((rating) => (
+                  <button
+                    key={rating}
+                    type="button"
+                    onClick={() =>
+                      setReviewForm((prev) => ({
+                        ...prev,
+                        rating
+                      }))
+                    }
+                    className="p-1"
+                    aria-label={`${rating} star rating`}
+                  >
+                    <Star
+                      className={`w-8 h-8 ${
+                        rating <= reviewForm.rating
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-semibold text-gray-700">
+                Review
+              </span>
+              <textarea
+                value={reviewForm.comment}
+                onChange={(event) =>
+                  setReviewForm((prev) => ({
+                    ...prev,
+                    comment: event.target.value
+                  }))
+                }
+                rows="4"
+                placeholder="Share your experience with this product"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-green-500 resize-none"
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="
+                w-full inline-flex items-center justify-center gap-2
+                rounded-xl bg-green-600 px-5 py-3 font-bold text-white
+                hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60
+              "
+            >
+              <Send className="w-4 h-4" />
+              {submitting ? 'Submitting...' : 'Submit Review'}
+            </button>
+          </form>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(selectedRefund)}
+        onClose={closeRefund}
+        title="Request Refund"
+        size="md"
+      >
+        {selectedRefund && (
+          <form onSubmit={handleRefundRequest} className="space-y-5">
+            <div className="rounded-xl bg-gray-50 p-4">
+              <p className="text-sm text-gray-500">
+                Order
+              </p>
+              <p className="font-bold text-gray-900">
+                {selectedRefund.orderNumber || selectedRefund.id}
+              </p>
+              <p className="mt-2 text-xl font-bold text-green-600">
+                {formatCurrency(selectedRefund.totalAmount)}
+              </p>
+            </div>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-semibold text-gray-700">
+                Reason
+              </span>
+              <select
+                value={refundForm.reason}
+                onChange={(event) =>
+                  setRefundForm((prev) => ({
+                    ...prev,
+                    reason: event.target.value
+                  }))
+                }
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 outline-none focus:border-green-500"
+              >
+                <option>Damaged item</option>
+                <option>Wrong item delivered</option>
+                <option>Missing item</option>
+                <option>Item quality issue</option>
+                <option>Other</option>
+              </select>
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-semibold text-gray-700">
+                Details
+              </span>
+              <textarea
+                value={refundForm.details}
+                onChange={(event) =>
+                  setRefundForm((prev) => ({
+                    ...prev,
+                    details: event.target.value
+                  }))
+                }
+                rows="4"
+                placeholder="Describe the issue and what happened"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-green-500 resize-none"
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="
+                w-full inline-flex items-center justify-center gap-2
+                rounded-xl bg-red-600 px-5 py-3 font-bold text-white
+                hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60
+              "
+            >
+              <RotateCcw className="w-4 h-4" />
+              {submitting ? 'Sending...' : 'Send Refund Request'}
+            </button>
+          </form>
+        )}
+      </Modal>
     </div>
   )
 }

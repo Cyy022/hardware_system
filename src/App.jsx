@@ -12,6 +12,7 @@ import Inventory from './pages/admin/Inventory'
 import StockIn from './pages/admin/StockIn'
 import StockOut from './pages/admin/StockOut'
 import SalesReports from './pages/admin/SalesReports'
+import Analytics from './pages/admin/Analytics'
 import Suppliers from './pages/admin/Suppliers'
 import Accounts from './pages/admin/Accounts'
 import Orders from './pages/admin/Orders'
@@ -61,6 +62,11 @@ function App() {
           <Route
             path="/admin/sales-reports"
             element={<SalesReports />}
+          />
+
+          <Route
+            path="/admin/analytics"
+            element={<Analytics />}
           />
 
           <Route
