@@ -375,11 +375,11 @@ const EcommerceLayout = () => {
                         <div>
 
                           <p className="font-medium text-gray-900">
-                            Account Settings
+                            Saved Address
                           </p>
 
                           <p className="text-xs text-gray-500">
-                            Manage your information
+                            Favorites and payments
                           </p>
 
                         </div>

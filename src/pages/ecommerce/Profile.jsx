@@ -12,7 +12,12 @@ import {
   Save,
   X,
   Home,
-  Landmark
+  Landmark,
+  Heart,
+  CreditCard,
+  ShoppingBag,
+  Star,
+  WalletCards
 } from 'lucide-react'
 
 import { useAuth } from '../../context/AuthContext'
@@ -201,11 +206,6 @@ const Profile = () => {
       value: profile?.phone || 'No phone number'
     },
     {
-      icon: MapPin,
-      label: 'Address',
-      value: addressText || 'No address added'
-    },
-    {
       icon: Calendar,
       label: 'Birthday',
       value: profile?.birthday || 'No birthday added'
@@ -216,7 +216,7 @@ const Profile = () => {
       value: 'Active & Verified',
       strong: true
     }
-  ]), [addressText, displayEmail, displayName, profile])
+  ]), [displayEmail, displayName, profile])
 
   const updateForm = (field, value) => {
     if (field === 'province') {
@@ -631,35 +631,204 @@ const Profile = () => {
                 )
               })}
 
-              {profile?.addressDetails?.landmark && (
-                <div className="border border-gray-200 rounded-2xl p-4 sm:p-5">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Landmark className="w-5 h-5 text-green-600 shrink-0" />
-                    <h2 className="font-semibold text-gray-900">
-                      Landmark
-                    </h2>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+              <section className="lg:col-span-2 border border-gray-200 rounded-2xl p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center">
+                      <MapPin className="w-5 h-5 text-green-700" />
+                    </div>
+
+                    <div>
+                      <h2 className="font-bold text-gray-900">
+                        Saved Address
+                      </h2>
+                      <p className="text-sm text-gray-500">
+                        Default delivery location
+                      </p>
+                    </div>
                   </div>
 
-                  <p className="text-base sm:text-lg text-gray-600 break-words">
-                    {profile.addressDetails.landmark}
-                  </p>
+                  <button
+                    type="button"
+                    onClick={startEditing}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-green-200 px-4 py-2 text-sm font-semibold text-green-700 hover:bg-green-50 transition"
+                  >
+                    <Pencil className="w-4 h-4" />
+                    Edit
+                  </button>
                 </div>
-              )}
 
-              {profile?.addressDetails?.deliveryNotes && (
-                <div className="border border-gray-200 rounded-2xl p-4 sm:p-5">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Home className="w-5 h-5 text-green-600 shrink-0" />
-                    <h2 className="font-semibold text-gray-900">
-                      Delivery Notes
-                    </h2>
+                <div className="rounded-2xl bg-gray-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <Home className="w-5 h-5 text-green-600 shrink-0 mt-1" />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 break-words">
+                        {addressText || 'No saved address yet'}
+                      </p>
+
+                      <div className="mt-3 grid sm:grid-cols-2 gap-3 text-sm text-gray-600">
+                        <div>
+                          <span className="block text-gray-400">
+                            Province
+                          </span>
+                          {profile?.addressDetails?.province || 'Not set'}
+                        </div>
+
+                        <div>
+                          <span className="block text-gray-400">
+                            City / Municipality
+                          </span>
+                          {profile?.addressDetails?.city || 'Not set'}
+                        </div>
+
+                        <div>
+                          <span className="block text-gray-400">
+                            Barangay
+                          </span>
+                          {profile?.addressDetails?.barangay || 'Not set'}
+                        </div>
+
+                        <div>
+                          <span className="block text-gray-400">
+                            Postal Code
+                          </span>
+                          {profile?.addressDetails?.postalCode || 'Not set'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {(profile?.addressDetails?.landmark || profile?.addressDetails?.deliveryNotes) && (
+                  <div className="mt-4 grid sm:grid-cols-2 gap-3">
+                    {profile?.addressDetails?.landmark && (
+                      <div className="rounded-2xl border border-gray-100 p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Landmark className="w-4 h-4 text-green-600" />
+                          <p className="font-semibold text-gray-900">
+                            Landmark
+                          </p>
+                        </div>
+                        <p className="text-sm text-gray-600 break-words">
+                          {profile.addressDetails.landmark}
+                        </p>
+                      </div>
+                    )}
+
+                    {profile?.addressDetails?.deliveryNotes && (
+                      <div className="rounded-2xl border border-gray-100 p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <ShoppingBag className="w-4 h-4 text-green-600" />
+                          <p className="font-semibold text-gray-900">
+                            Delivery Notes
+                          </p>
+                        </div>
+                        <p className="text-sm text-gray-600 break-words">
+                          {profile.addressDetails.deliveryNotes}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
+
+              <section className="border border-gray-200 rounded-2xl p-4 sm:p-5">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-11 h-11 rounded-xl bg-rose-100 flex items-center justify-center">
+                    <Heart className="w-5 h-5 text-rose-600" />
                   </div>
 
-                  <p className="text-base sm:text-lg text-gray-600 break-words">
-                    {profile.addressDetails.deliveryNotes}
+                  <div>
+                    <h2 className="font-bold text-gray-900">
+                      Wishlist / Favorites
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      Saved products
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-rose-50 p-4 text-center">
+                  <Star className="w-10 h-10 mx-auto text-rose-400 mb-3" />
+                  <p className="text-3xl font-bold text-gray-900">
+                    {(profile?.wishlist || profile?.favorites || []).length}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Favorite items
                   </p>
                 </div>
-              )}
+
+                <p className="text-sm text-gray-500 mt-4">
+                  Products you mark as favorites will be shown here for faster checkout later.
+                </p>
+              </section>
+
+              <section className="lg:col-span-3 border border-gray-200 rounded-2xl p-4 sm:p-5">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center">
+                    <WalletCards className="w-5 h-5 text-blue-700" />
+                  </div>
+
+                  <div>
+                    <h2 className="font-bold text-gray-900">
+                      Payment Methods
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      Available checkout options
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="rounded-2xl border border-green-200 bg-green-50 p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <CreditCard className="w-5 h-5 text-green-700" />
+                      <p className="font-bold text-gray-900">
+                        Cash on Delivery
+                      </p>
+                    </div>
+                    <span className="inline-flex rounded-full bg-green-600 px-3 py-1 text-xs font-bold text-white">
+                      Default
+                    </span>
+                    <p className="text-sm text-gray-600 mt-3">
+                      Pay when your order arrives at your saved address.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-gray-200 p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <WalletCards className="w-5 h-5 text-gray-500" />
+                      <p className="font-bold text-gray-900">
+                        E-Wallet
+                      </p>
+                    </div>
+                    <span className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-600">
+                      Coming Soon
+                    </span>
+                    <p className="text-sm text-gray-500 mt-3">
+                      GCash or Maya payment can be added here when enabled.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-gray-200 p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <ShieldCheck className="w-5 h-5 text-gray-500" />
+                      <p className="font-bold text-gray-900">
+                        Payment Status
+                      </p>
+                    </div>
+                    <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
+                      Secure Checkout
+                    </span>
+                    <p className="text-sm text-gray-500 mt-3">
+                      Payment details are connected to your checkout orders.
+                    </p>
+                  </div>
+                </div>
+              </section>
             </div>
           </div>
         </div>

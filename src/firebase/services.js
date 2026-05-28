@@ -847,6 +847,10 @@ export const completeOrder = async (
 
     const batch = writeBatch(db)
 
+    if (order.orderStatus === 'completed') {
+      return true
+    }
+
     // ================= DEDUCT STOCK =================
 
     for (const item of order.items) {
@@ -872,6 +876,58 @@ export const completeOrder = async (
       }
 
     }
+
+    // ================= SAVE TO SALES REPORT =================
+
+    const saleRef = doc(db, 'sales', `order-${orderId}`)
+
+    const saleItems = (order.items || []).map(item => {
+      const quantity = Number(item.quantity) || 0
+      const unitPrice = Number(item.price || item.unitPrice) || 0
+
+      return {
+        productId: item.productId || '',
+        variantId: item.variantId || '',
+        productName: item.productName || '',
+        variantName: item.variantName || 'Default',
+        sku: item.sku || '',
+        quantity,
+        unitPrice,
+        subtotal: unitPrice * quantity
+      }
+    })
+
+    const subtotal = saleItems.reduce(
+      (sum, item) => sum + Number(item.subtotal || 0),
+      0
+    )
+
+    batch.set(saleRef, {
+      orderId,
+      orderNumber: order.orderNumber || orderId,
+      source: 'ecommerce',
+      customerName: order.customerName || 'Customer',
+      email: order.email || '',
+      phone: order.phone || '',
+      shippingAddress: order.shippingAddress || '',
+      addressDetails: order.addressDetails || {},
+      deliveryNotes: order.deliveryNotes || '',
+      paymentMethod: order.paymentMethod || 'cod',
+      paymentStatus: 'paid',
+      items: saleItems,
+      subtotal,
+      discount: 0,
+      discountAmount: 0,
+      grandTotal: Number(order.totalAmount) || subtotal,
+      totalItems: saleItems.reduce(
+        (sum, item) => sum + Number(item.quantity || 0),
+        0
+      ),
+      cashier: 'Ecommerce',
+      status: 'completed',
+      completedAt: serverTimestamp(),
+      createdAt: serverTimestamp()
+    })
 
     // ================= UPDATE ORDER =================
 
