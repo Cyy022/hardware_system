@@ -44,7 +44,7 @@ const SignIn = () => {
 
       await login(email, password, 'user')
 
-      navigate('/')
+      navigate(location.state?.from || '/')
 
     } catch (error) {
 

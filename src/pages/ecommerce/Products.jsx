@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Search, Filter, Package, AlertTriangle, Check, X } from 'lucide-react'
 import { useProducts } from '../../hooks/useProducts'
+import { useAuth } from '../../context/AuthContext'
 import { useAccessibility } from '../../context/AccessibilityContext'
 import { getStockStatus } from '../../firebase/services'
 import Modal from '../../components/common/Modal'
@@ -10,7 +11,9 @@ import toast from 'react-hot-toast'
 
 const Products = () => {
   const { products, categories, loading } = useProducts()
+  const { user } = useAuth()
   const { speak } = useAccessibility()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -46,6 +49,60 @@ const Products = () => {
     setSelectedProduct(product)
     setShowProductModal(true)
     speak(`Viewing ${product.name}`)
+  }
+
+  const handleAddToCart = (product, minPrice) => {
+    if (!user) {
+      toast.error('Please sign in first before adding products to your cart.')
+
+      navigate('/signin', {
+        state: {
+          from: '/products',
+          message: 'Please sign in first before adding products to your cart.'
+        }
+      })
+
+      return
+    }
+
+    const existingCart =
+      JSON.parse(localStorage.getItem('cart')) || []
+
+    const existingItem = existingCart.find(
+      item => item.id === product.id
+    )
+
+    if (existingItem) {
+      existingItem.quantity += 1
+    } else {
+      existingCart.push({
+        ...product,
+        quantity: 1,
+        price: minPrice
+      })
+    }
+
+    localStorage.setItem(
+      'cart',
+      JSON.stringify(existingCart)
+    )
+
+    speak(`${product.name} added to cart`)
+
+    toast.success('Product added to cart!', {
+      duration: 3000,
+      style: {
+        borderRadius: '16px',
+        background: '#16a34a',
+        color: '#fff',
+        padding: '14px 18px',
+        fontWeight: '600'
+      },
+      iconTheme: {
+        primary: '#fff',
+        secondary: '#16a34a'
+      }
+    })
   }
 
   if (loading) {
@@ -172,49 +229,7 @@ const Products = () => {
   <button
     onClick={(e) => {
       e.stopPropagation()
-
-      const existingCart =
-        JSON.parse(localStorage.getItem('cart')) || []
-
-      const existingItem = existingCart.find(
-        item => item.id === product.id
-      )
-
-      if (existingItem) {
-
-        existingItem.quantity += 1
-
-      } else {
-
-        existingCart.push({
-          ...product,
-          quantity: 1,
-          price: minPrice
-        })
-
-      }
-
-      localStorage.setItem(
-        'cart',
-        JSON.stringify(existingCart)
-      )
-
-      speak(`${product.name} added to cart`)
-
-      toast.success('Product added to cart!', {
-        duration: 3000,
-        style: {
-          borderRadius: '16px',
-          background: '#16a34a',
-          color: '#fff',
-          padding: '14px 18px',
-          fontWeight: '600'
-        },
-        iconTheme: {
-          primary: '#fff',
-          secondary: '#16a34a'
-        }
-      })
+      handleAddToCart(product, minPrice)
     }}
     disabled={totalStock <= 0}
     className="
