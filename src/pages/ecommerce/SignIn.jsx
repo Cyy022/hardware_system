@@ -5,6 +5,10 @@ import {
   useLocation
 } from 'react-router-dom'
 
+import {
+  ArrowLeft
+} from 'lucide-react'
+
 import { useAuth } from '../../context/AuthContext'
 
 const SignIn = () => {
@@ -98,6 +102,14 @@ const SignIn = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
 
       <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
+
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-green-600 mb-6 hover:text-green-700"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to shop
+        </Link>
 
         <h1 className="text-3xl font-bold mb-2 text-center text-gray-900">
           Sign In
