@@ -286,7 +286,7 @@ const Cart = () => {
           </h1>
 
           <p className="text-gray-500 text-lg">
-            Select product variants before checkout.
+            Review your selected items before checkout.
           </p>
         </div>
 
@@ -349,34 +349,52 @@ const Cart = () => {
                         Hardware Product
                       </p>
 
-                      <label className="block mt-4 max-w-md">
-                        <span className="text-sm font-semibold text-gray-700">
-                          Variant
-                        </span>
-                        <select
-                          value={item.variantId || ''}
-                          onChange={(event) =>
-                            updateVariant(index, event.target.value)
-                          }
-                          disabled={productsLoading || availableVariants.length === 0}
-                          className="
-                            mt-2 w-full rounded-xl border border-gray-200
-                            bg-white px-4 py-3 text-sm outline-none
-                            focus:border-green-500 disabled:bg-gray-100
-                          "
-                        >
-                          <option value="">
-                            {productsLoading
-                              ? 'Loading variants...'
-                              : 'Choose variant'}
-                          </option>
-                          {availableVariants.map((variant) => (
-                            <option key={variant.id} value={variant.id}>
-                              {variant.name} - {formatCurrency(variant.price)} ({variant.quantity} left)
+                      {item.variantId ? (
+                        <div className="mt-4 flex flex-wrap gap-2 text-sm">
+                          <span className="rounded-full bg-green-50 px-3 py-1 font-semibold text-green-700">
+                            {item.variantName || selectedVariant?.name || 'Default'}
+                          </span>
+                          {item.sku && (
+                            <span className="rounded-full bg-gray-100 px-3 py-1 text-gray-600">
+                              SKU: {item.sku}
+                            </span>
+                          )}
+                          {item.size && (
+                            <span className="rounded-full bg-gray-100 px-3 py-1 text-gray-600">
+                              Size: {item.size}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <label className="block mt-4 max-w-md">
+                          <span className="text-sm font-semibold text-gray-700">
+                            Variant
+                          </span>
+                          <select
+                            value={item.variantId || ''}
+                            onChange={(event) =>
+                              updateVariant(index, event.target.value)
+                            }
+                            disabled={productsLoading || availableVariants.length === 0}
+                            className="
+                              mt-2 w-full rounded-xl border border-gray-200
+                              bg-white px-4 py-3 text-sm outline-none
+                              focus:border-green-500 disabled:bg-gray-100
+                            "
+                          >
+                            <option value="">
+                              {productsLoading
+                                ? 'Loading variants...'
+                                : 'Choose variant'}
                             </option>
-                          ))}
-                        </select>
-                      </label>
+                            {availableVariants.map((variant) => (
+                              <option key={variant.id} value={variant.id}>
+                                {variant.name} - {formatCurrency(variant.price)} ({variant.quantity} left)
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
 
                       {availableVariants.length === 0 && !productsLoading && (
                         <p className="text-sm font-semibold text-red-600 mt-2">
@@ -524,7 +542,7 @@ const Cart = () => {
 
               {!canProceedToCheckout && (
                 <p className="mt-4 text-center text-sm font-semibold text-gray-500">
-                  Select an available variant for every product first.
+                  Update unavailable or over-stock items before checkout.
                 </p>
               )}
             </div>

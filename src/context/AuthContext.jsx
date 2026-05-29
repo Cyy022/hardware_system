@@ -6,7 +6,10 @@ import {
   onAuthStateChanged,
   setPersistence,
   browserLocalPersistence,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  verifyPasswordResetCode,
+  confirmPasswordReset
 } from 'firebase/auth'
 
 import {
@@ -211,6 +214,55 @@ const login = async (email, password, loginType = 'user') => {
   }
 
 }
+
+  // ================= PASSWORD RESET =================
+
+  const sendResetEmail = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email, {
+        url: `${window.location.origin}/signin`
+      })
+
+      toast.success('Code is sent to your email.')
+    } catch (error) {
+      console.error(error)
+
+      if (error.code === 'auth/user-not-found') {
+        toast.error('No account found with this email.')
+      } else if (error.code === 'auth/invalid-email') {
+        toast.error('Please enter a valid email.')
+      } else {
+        toast.error('Unable to send reset email.')
+      }
+
+      throw error
+    }
+  }
+
+  const verifyResetCode = async (code) => {
+    return verifyPasswordResetCode(auth, code)
+  }
+
+  const updatePasswordWithCode = async (code, newPassword) => {
+    try {
+      await confirmPasswordReset(auth, code, newPassword)
+      toast.success('Password updated. Please sign in.')
+    } catch (error) {
+      console.error(error)
+
+      if (error.code === 'auth/expired-action-code') {
+        toast.error('Reset code expired. Please request a new one.')
+      } else if (error.code === 'auth/invalid-action-code') {
+        toast.error('Invalid reset code. Please request a new one.')
+      } else if (error.code === 'auth/weak-password') {
+        toast.error('Password should be at least 6 characters.')
+      } else {
+        toast.error('Unable to update password.')
+      }
+
+      throw error
+    }
+  }
   // ================= LOGOUT =================
 
   const logout = async () => {
@@ -242,7 +294,10 @@ const login = async (email, password, loginType = 'user') => {
     isAdmin,
     login,
     logout,
-    register
+    register,
+    sendResetEmail,
+    verifyResetCode,
+    updatePasswordWithCode
   }
 
   return (
