@@ -637,7 +637,7 @@ const EcommerceLayout = () => {
               <ul className="space-y-3 text-sm text-gray-400">
 
                 <li>
-                  Batang Gapan, Nueva Ecija
+                  Batang Gapan, General Trias Cavite
                 </li>
 
                 <li>
