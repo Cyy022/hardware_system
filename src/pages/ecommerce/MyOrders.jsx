@@ -56,8 +56,8 @@ const statusDetails = {
     progress: 25
   },
   confirmed: {
-    label: 'Parating na ang order mo',
-    short: 'Parating na',
+    label: 'In Transit',
+    short: 'In Transit',
     message: 'Admin confirmed your order. We are preparing it for delivery.',
     icon: Truck,
     badge: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -319,7 +319,7 @@ const MyOrders = () => {
               `}
             >
               <span className="block text-xs font-semibold uppercase tracking-wide">
-                {filter === 'confirmed' ? 'parating' : filter}
+                {filter === 'confirmed' ? 'In Transit' : filter}
               </span>
               <span className="block text-2xl font-bold mt-1">
                 {counts[filter] || 0}

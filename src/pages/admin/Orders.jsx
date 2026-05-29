@@ -47,7 +47,7 @@ const statusStyles = {
 
 const statusLabels = {
   pending: 'Waiting for confirmation',
-  confirmed: 'Confirmed / Parating na',
+  confirmed: 'In Transit',
   preparing: 'Preparing',
   completed: 'Completed'
 }
@@ -175,7 +175,7 @@ const Orders = () => {
             `}
           >
             <span className="block text-xs font-semibold uppercase tracking-wide">
-              {filter}
+              {filter === 'confirmed' ? 'In Transit' : filter}
             </span>
             <span className="block text-2xl font-bold mt-1">
               {counts[filter] || 0}
