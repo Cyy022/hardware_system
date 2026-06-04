@@ -122,7 +122,6 @@ const SignIn = () => {
   const [pendingLogin, setPendingLogin] = useState(null)
   const [twoFactorCode, setTwoFactorCode] = useState('')
   const [lastLogin, setLastLogin] = useState('')
-
   const loginMessage = location.state?.message || ''
   const isLocked = lockedUntil > Date.now()
   const lockoutMinutesLeft = Math.ceil((lockedUntil - Date.now()) / 60000)
@@ -165,22 +164,31 @@ const SignIn = () => {
     refreshCaptcha()
   }
 
-  const sendTwoFactorEmail = async (targetEmail, code) => {
-    await emailjs.send(
+const sendTwoFactorEmail = async (targetEmail, code) => {
+  console.log('OTP FUNCTION CALLED')
+  console.log('EMAIL:', targetEmail)
+  console.log('CODE:', code)
+
+  try {
+    const result = await emailjs.send(
       'service_daso4rv',
-      'template_a41se2f',
+      'template_x7k9m2n', // Login Verification Template
       {
         to_email: targetEmail,
         email: targetEmail,
         name: targetEmail,
         verification_code: code,
         code,
-        expires_in: `${OTP_EXPIRY_MINUTES} minutes`
+        expires_in: '5 minutes'
       },
       '1pMNRxW60at4SEuYJ'
     )
-  }
 
+    console.log('EMAIL SENT', result)
+  } catch (error) {
+    console.error('EMAIL ERROR', error)
+  }
+}
   const recordLoginActivity = async (user) => {
     await setDoc(
       doc(db, 'users', user.uid),
