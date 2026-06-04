@@ -5,7 +5,7 @@ import {
   signOut,
   onAuthStateChanged,
   setPersistence,
-  browserLocalPersistence,
+  inMemoryPersistence,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   verifyPasswordResetCode,
@@ -40,34 +40,57 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
 
-    setPersistence(auth, browserLocalPersistence)
+    let unsubscribe = () => {}
+    let isMounted = true
 
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (currentUser) => {
+    const initializeAuth = async () => {
 
-        if (currentUser) {
+      try {
 
-          setUser(currentUser)
+        await setPersistence(auth, inMemoryPersistence)
+        await signOut(auth)
 
-          // ADMIN CHECK
-          setIsAdmin(
-            currentUser.email === ADMIN_EMAIL
-          )
+      } catch (error) {
 
-        } else {
-
-          setUser(null)
-          setIsAdmin(false)
-
-        }
-
-        setLoading(false)
+        console.error(error)
 
       }
-    )
 
-    return () => unsubscribe()
+      if (!isMounted) return
+
+      unsubscribe = onAuthStateChanged(
+        auth,
+        (currentUser) => {
+
+          if (currentUser) {
+
+            setUser(currentUser)
+
+            // ADMIN CHECK
+            setIsAdmin(
+              currentUser.email === ADMIN_EMAIL
+            )
+
+          } else {
+
+            setUser(null)
+            setIsAdmin(false)
+
+          }
+
+          setLoading(false)
+
+        }
+      )
+
+    }
+
+    initializeAuth()
+
+    return () => {
+      isMounted = false
+      unsubscribe()
+    }
 
   }, [])
 
