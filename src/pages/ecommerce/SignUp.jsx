@@ -9,16 +9,21 @@ import {
   ArrowLeft,
   Eye,
   EyeOff,
+  FileCheck,
   Lock,
   Mail,
   Phone,
+  RefreshCw,
+  ShieldCheck,
   User
 } from 'lucide-react'
 
 import toast from 'react-hot-toast'
 
 import {
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  signOut
 } from 'firebase/auth'
 
 import {
@@ -54,6 +59,16 @@ const getPasswordError = (password) => {
   return ''
 }
 
+const createCaptcha = () => {
+  const firstNumber = Math.floor(Math.random() * 8) + 2
+  const secondNumber = Math.floor(Math.random() * 8) + 2
+
+  return {
+    question: `${firstNumber} + ${secondNumber}`,
+    answer: String(firstNumber + secondNumber)
+  }
+}
+
 const SignUp = () => {
   const navigate = useNavigate()
 
@@ -61,6 +76,9 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [captcha, setCaptcha] = useState(() => createCaptcha())
+  const [captchaAnswer, setCaptchaAnswer] = useState('')
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -80,6 +98,11 @@ const SignUp = () => {
       ...prev,
       [event.target.name]: event.target.value
     }))
+  }
+
+  const refreshCaptcha = () => {
+    setCaptcha(createCaptcha())
+    setCaptchaAnswer('')
   }
 
   const validateForm = () => {
@@ -117,6 +140,18 @@ const SignUp = () => {
       return false
     }
 
+    if (captchaAnswer.trim() !== captcha.answer) {
+      setErrorMessage('Please complete the CAPTCHA correctly.')
+
+      return false
+    }
+
+    if (!acceptedTerms) {
+      setErrorMessage('Please agree to the Terms and Privacy Policy.')
+
+      return false
+    }
+
     return true
   }
 
@@ -136,6 +171,10 @@ const SignUp = () => {
         )
 
       const firebaseUser = userCredential.user
+
+      await sendEmailVerification(firebaseUser, {
+        url: `${window.location.origin}/signin`
+      })
 
       await setDoc(
         doc(db, 'users', firebaseUser.uid),
@@ -160,14 +199,23 @@ const SignUp = () => {
             deliveryNotes: ''
           },
           role: 'customer',
+          emailVerified: false,
+          acceptedTermsAt: serverTimestamp(),
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         }
       )
 
-      toast.success('Account created successfully.')
+      await signOut(auth)
 
-      navigate('/profile')
+      toast.success('Account created. Please verify your email before signing in.')
+
+      navigate('/signin', {
+        replace: true,
+        state: {
+          message: 'We sent a verification link to your email. Verify your account before signing in.'
+        }
+      })
     } catch (error) {
       console.log(error)
 
@@ -180,6 +228,8 @@ const SignUp = () => {
       } else {
         setErrorMessage('Registration failed. Please try again.')
       }
+
+      refreshCaptcha()
     } finally {
       setLoading(false)
     }
@@ -376,6 +426,56 @@ const SignUp = () => {
                   </div>
                 </label>
               </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="w-5 h-5 text-green-600 mt-1" />
+                  <div className="flex-1">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      CAPTCHA
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-3 text-lg font-bold text-gray-900 sm:w-32">
+                        {captcha.question}
+                      </div>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={captchaAnswer}
+                        onChange={(event) => setCaptchaAnswer(event.target.value)}
+                        placeholder="Answer"
+                        className="min-w-0 flex-1 rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-green-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={refreshCaptcha}
+                        className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-600 hover:text-green-700"
+                        aria-label="Refresh CAPTCHA"
+                      >
+                        <RefreshCw className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <label className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(event) => setAcceptedTerms(event.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                />
+                <span className="text-sm leading-6 text-gray-600">
+                  <span className="inline-flex items-center gap-2 font-semibold text-gray-800">
+                    <FileCheck className="w-4 h-4 text-green-600" />
+                    Terms and Privacy Agreement
+                  </span>
+                  <span className="block">
+                    I agree to the Terms of Service and Privacy Policy, including the use of my account details for order processing and customer support.
+                  </span>
+                </span>
+              </label>
 
               <button
                 type="submit"

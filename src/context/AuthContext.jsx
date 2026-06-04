@@ -22,6 +22,7 @@ import { auth, db } from '../firebase/config'
 import toast from 'react-hot-toast'
 
 const AuthContext = createContext()
+const ECOMMERCE_SESSION_TIMEOUT_MS = 15 * 60 * 1000
 
 export const useAuth = () => {
   return useContext(AuthContext)
@@ -156,7 +157,12 @@ export const AuthProvider = ({ children }) => {
   }
 
   // ================= LOGIN =================
-const login = async (email, password, loginType = 'user') => {
+const login = async (
+  email,
+  password,
+  loginType = 'user',
+  options = {}
+) => {
 
   try {
 
@@ -199,6 +205,29 @@ const login = async (email, password, loginType = 'user') => {
 
     }
 
+    if (
+      loginType === 'user' &&
+      !loggedInUser.emailVerified
+    ) {
+
+      await signOut(auth)
+
+      toast.error(
+        'Please verify your email before signing in.'
+      )
+
+      throw new Error('Email not verified')
+
+    }
+
+    if (options.endSessionAfterCheck) {
+
+      await signOut(auth)
+
+      return loggedInUser
+
+    }
+
     toast.success('Login successful!')
 
     return loggedInUser
@@ -225,7 +254,8 @@ const login = async (email, password, loginType = 'user') => {
 
     } else if (
       error.message !== 'Not admin' &&
-      error.message !== 'Admin blocked from ecommerce'
+      error.message !== 'Admin blocked from ecommerce' &&
+      error.message !== 'Email not verified'
     ) {
 
       toast.error('Login failed.')
@@ -310,6 +340,45 @@ const login = async (email, password, loginType = 'user') => {
     }
 
   }
+
+  useEffect(() => {
+    if (!user || isAdmin) return undefined
+
+    let timeoutId
+
+    const resetTimeout = () => {
+      window.clearTimeout(timeoutId)
+
+      timeoutId = window.setTimeout(async () => {
+        await signOut(auth)
+        setUser(null)
+        setIsAdmin(false)
+        toast.error('Session expired due to inactivity.')
+      }, ECOMMERCE_SESSION_TIMEOUT_MS)
+    }
+
+    const events = [
+      'click',
+      'keydown',
+      'mousemove',
+      'scroll',
+      'touchstart'
+    ]
+
+    events.forEach((eventName) => {
+      window.addEventListener(eventName, resetTimeout)
+    })
+
+    resetTimeout()
+
+    return () => {
+      window.clearTimeout(timeoutId)
+
+      events.forEach((eventName) => {
+        window.removeEventListener(eventName, resetTimeout)
+      })
+    }
+  }, [user, isAdmin])
 
   const value = {
     user,
