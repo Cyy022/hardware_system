@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 
 const AccessibilityContext = createContext()
 
@@ -17,6 +17,12 @@ export const AccessibilityProvider = ({ children }) => {
   const [voiceEnabled, setVoiceEnabled] = useState(false)
   const [recognition, setRecognition] = useState(null)
   const [isListening, setIsListening] = useState(false)
+  const [voiceSupported, setVoiceSupported] = useState(false)
+  const [lastVoiceCommand, setLastVoiceCommand] = useState('')
+  const [voiceMessage, setVoiceMessage] = useState('')
+  const commandHandlersRef = useRef([])
+  const voiceEnabledRef = useRef(false)
+  const recognitionRef = useRef(null)
 
   // Initialize speech synthesis
   const speak = useCallback((text) => {
@@ -35,21 +41,80 @@ export const AccessibilityProvider = ({ children }) => {
   }, [speechEnabled])
 
   // Initialize speech recognition
+  const speakMessage = useCallback((text) => {
+    setVoiceMessage(text)
+    if (!window.speechSynthesis) return
+
+    window.speechSynthesis.cancel()
+
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.rate = 1
+    utterance.pitch = 1
+    utterance.volume = 1
+    utterance.lang = 'en-US'
+
+    window.speechSynthesis.speak(utterance)
+  }, [])
+
+  const normalizeCommand = useCallback((command) => {
+    return command
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  }, [])
+
+  const runVoiceCommand = useCallback((rawCommand) => {
+    const command = normalizeCommand(rawCommand)
+
+    if (!command) return
+
+    setLastVoiceCommand(command)
+
+    const matchedCommand = commandHandlersRef.current.find(({ phrases }) =>
+      phrases.some((phrase) => command.includes(normalizeCommand(phrase)))
+    )
+
+    if (!matchedCommand) {
+      speakMessage(`Voice command not found: ${command}`)
+      return
+    }
+
+    matchedCommand.action(command)
+    speakMessage(matchedCommand.feedback || 'Voice command completed')
+  }, [normalizeCommand, speakMessage])
+
   useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+
+    if (SpeechRecognition) {
       const rec = new SpeechRecognition()
-      rec.continuous = false
+      rec.continuous = true
       rec.interimResults = false
       rec.lang = 'en-US'
 
       rec.onstart = () => setIsListening(true)
-      rec.onend = () => setIsListening(false)
+      rec.onend = () => {
+        setIsListening(false)
+        if (voiceEnabledRef.current) {
+          try {
+            rec.start()
+          } catch (error) {
+            setIsListening(false)
+          }
+        }
+      }
       rec.onerror = () => setIsListening(false)
+      rec.onresult = (event) => {
+        const transcript = event.results[event.results.length - 1][0].transcript
+        runVoiceCommand(transcript)
+      }
 
+      recognitionRef.current = rec
       setRecognition(rec)
+      setVoiceSupported(true)
     }
-  }, [])
+  }, [runVoiceCommand])
 
   const startListening = useCallback((onResult) => {
     if (recognition && voiceEnabled) {
@@ -66,6 +131,15 @@ export const AccessibilityProvider = ({ children }) => {
       recognition.stop()
     }
   }, [recognition])
+
+  const registerVoiceCommands = useCallback((commands) => {
+    const preparedCommands = commands.map((command) => ({
+      ...command,
+      phrases: command.phrases || []
+    }))
+
+    commandHandlersRef.current = preparedCommands
+  }, [])
 
   // Toggle functions
   const toggleHighContrast = () => {
@@ -97,7 +171,29 @@ export const AccessibilityProvider = ({ children }) => {
   }
 
   const toggleVoice = () => {
-    setVoiceEnabled(prev => !prev)
+    if (!voiceSupported || !recognitionRef.current) {
+      speakMessage('Voice commands are not supported in this browser')
+      return
+    }
+
+    setVoiceEnabled(prev => {
+      const nextValue = !prev
+      voiceEnabledRef.current = nextValue
+
+      try {
+        if (nextValue) {
+          recognitionRef.current.start()
+          speakMessage('Voice commands enabled')
+        } else {
+          recognitionRef.current.stop()
+          speakMessage('Voice commands disabled')
+        }
+      } catch (error) {
+        setIsListening(false)
+      }
+
+      return nextValue
+    })
   }
 
   // Keyboard navigation helper
@@ -134,10 +230,15 @@ export const AccessibilityProvider = ({ children }) => {
     largeText,
     speechEnabled,
     voiceEnabled,
+    voiceSupported,
     isListening,
+    lastVoiceCommand,
+    voiceMessage,
     speak,
+    runVoiceCommand,
     startListening,
     stopListening,
+    registerVoiceCommands,
     toggleHighContrast,
     toggleLargeText,
     toggleSpeech,

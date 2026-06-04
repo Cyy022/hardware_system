@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import logo from '../assets/BGMH.png'
 
 import {
@@ -22,7 +22,8 @@ import {
 import {
   Link,
   NavLink,
-  Outlet
+  Outlet,
+  useNavigate
 } from 'react-router-dom'
 
 import { useAuth } from '../context/AuthContext'
@@ -37,7 +38,8 @@ const EcommerceLayout = () => {
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
 
-  const { speak } = useAccessibility()
+  const { speak, registerVoiceCommands } = useAccessibility()
+  const navigate = useNavigate()
 
   const {
     user,
@@ -96,6 +98,101 @@ const EcommerceLayout = () => {
     }
 
   }
+
+  useEffect(() => {
+    const routeItems = [
+      ...navItems,
+      {
+        path: '/cart',
+        label: 'Cart'
+      },
+      {
+        path: '/checkout',
+        label: 'Checkout'
+      },
+      {
+        path: '/profile',
+        label: 'Profile'
+      },
+      {
+        path: '/my-orders',
+        label: 'My Orders'
+      },
+      {
+        path: '/signin',
+        label: 'Sign In'
+      }
+    ]
+
+    const routeCommands = routeItems.flatMap((item) => {
+      const label = item.label.toLowerCase()
+
+      return [
+        {
+          phrases: [
+            label,
+            `go to ${label}`,
+            `open ${label}`,
+            `navigate to ${label}`
+          ],
+          action: () => {
+            navigate(item.path)
+            setMobileMenuOpen(false)
+            setAccessibilityOpen(false)
+            setProfileOpen(false)
+          },
+          feedback: `Opening ${item.label}`
+        }
+      ]
+    })
+
+    registerVoiceCommands([
+      ...routeCommands,
+      {
+        phrases: ['open menu', 'show menu'],
+        action: () => setMobileMenuOpen(true),
+        feedback: 'Opening menu'
+      },
+      {
+        phrases: ['close menu', 'hide menu'],
+        action: () => setMobileMenuOpen(false),
+        feedback: 'Closing menu'
+      },
+      {
+        phrases: ['open accessibility', 'show accessibility', 'accessibility'],
+        action: () => setAccessibilityOpen(true),
+        feedback: 'Opening accessibility panel'
+      },
+      {
+        phrases: ['close accessibility', 'hide accessibility'],
+        action: () => setAccessibilityOpen(false),
+        feedback: 'Closing accessibility panel'
+      },
+      {
+        phrases: ['open account', 'open profile menu', 'show account'],
+        action: () => setProfileOpen(true),
+        feedback: 'Opening account menu'
+      },
+      {
+        phrases: ['close account', 'close profile menu', 'hide account'],
+        action: () => setProfileOpen(false),
+        feedback: 'Closing account menu'
+      },
+      {
+        phrases: ['logout', 'log out', 'sign out'],
+        action: () => setShowLogoutModal(true),
+        feedback: 'Opening logout confirmation'
+      },
+      {
+        phrases: ['cancel logout', 'close logout'],
+        action: () => setShowLogoutModal(false),
+        feedback: 'Logout cancelled'
+      }
+    ])
+
+    return () => registerVoiceCommands([])
+  }, [navigate, registerVoiceCommands])
+
   return (
 
     <div className="min-h-screen bg-gray-50 flex flex-col">

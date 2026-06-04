@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import logo from '../assets/BGMH.png'
 import { ShoppingCart } from 'lucide-react'
 
@@ -38,7 +38,7 @@ const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   const { logout, user } = useAuth()
 
-  const { speak } = useAccessibility()
+  const { speak, registerVoiceCommands } = useAccessibility()
 
   const navigate = useNavigate()
 
@@ -125,6 +125,65 @@ const handleLogout = async () => {
     setSidebarOpen(false)
 
   }
+
+  useEffect(() => {
+    const routeCommands = menuItems.flatMap((item) => {
+      const label = item.label.toLowerCase()
+
+      return [
+        {
+          phrases: [
+            label,
+            `go to ${label}`,
+            `open ${label}`,
+            `navigate to ${label}`
+          ],
+          action: () => {
+            navigate(item.path)
+            setSidebarOpen(false)
+            setAccessibilityOpen(false)
+          },
+          feedback: `Opening ${item.label}`
+        }
+      ]
+    })
+
+    registerVoiceCommands([
+      ...routeCommands,
+      {
+        phrases: ['open menu', 'show menu', 'open sidebar'],
+        action: () => setSidebarOpen(true),
+        feedback: 'Opening menu'
+      },
+      {
+        phrases: ['close menu', 'hide menu', 'close sidebar'],
+        action: () => setSidebarOpen(false),
+        feedback: 'Closing menu'
+      },
+      {
+        phrases: ['open accessibility', 'show accessibility', 'accessibility'],
+        action: () => setAccessibilityOpen(true),
+        feedback: 'Opening accessibility panel'
+      },
+      {
+        phrases: ['close accessibility', 'hide accessibility'],
+        action: () => setAccessibilityOpen(false),
+        feedback: 'Closing accessibility panel'
+      },
+      {
+        phrases: ['logout', 'log out', 'sign out'],
+        action: () => setShowLogoutModal(true),
+        feedback: 'Opening logout confirmation'
+      },
+      {
+        phrases: ['cancel logout', 'close logout'],
+        action: () => setShowLogoutModal(false),
+        feedback: 'Logout cancelled'
+      }
+    ])
+
+    return () => registerVoiceCommands([])
+  }, [navigate, registerVoiceCommands])
 
   return (
 

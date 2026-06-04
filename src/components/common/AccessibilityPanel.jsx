@@ -8,7 +8,10 @@ const AccessibilityPanel = ({ isOpen, onClose }) => {
     largeText, 
     speechEnabled, 
     voiceEnabled, 
+    voiceSupported,
     isListening,
+    lastVoiceCommand,
+    voiceMessage,
     toggleHighContrast, 
     toggleLargeText, 
     toggleSpeech, 
@@ -69,8 +72,13 @@ const AccessibilityPanel = ({ isOpen, onClose }) => {
 
         <button
           onClick={toggleVoice}
+          disabled={!voiceSupported}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-            voiceEnabled ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            voiceEnabled
+              ? 'bg-primary-600 text-white'
+              : voiceSupported
+                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-50 text-gray-400 cursor-not-allowed'
           }`}
           aria-pressed={voiceEnabled}
         >
@@ -82,8 +90,13 @@ const AccessibilityPanel = ({ isOpen, onClose }) => {
 
       <div className="mt-4 pt-4 border-t border-gray-100">
         <p className="text-xs text-gray-500 text-center">
-          Use keyboard shortcuts for quick access
+          {voiceMessage || 'Use keyboard shortcuts for quick access'}
         </p>
+        {lastVoiceCommand && (
+          <p className="text-xs text-gray-400 text-center mt-2">
+            Last command: {lastVoiceCommand}
+          </p>
+        )}
       </div>
     </div>
   )
