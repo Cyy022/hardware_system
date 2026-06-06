@@ -205,21 +205,6 @@ const login = async (
 
     }
 
-    if (
-      loginType === 'user' &&
-      !loggedInUser.emailVerified
-    ) {
-
-      await signOut(auth)
-
-      toast.error(
-        'Please verify your email before signing in.'
-      )
-
-      throw new Error('Email not verified')
-
-    }
-
     if (options.endSessionAfterCheck) {
 
       await signOut(auth)
@@ -254,8 +239,7 @@ const login = async (
 
     } else if (
       error.message !== 'Not admin' &&
-      error.message !== 'Admin blocked from ecommerce' &&
-      error.message !== 'Email not verified'
+      error.message !== 'Admin blocked from ecommerce'
     ) {
 
       toast.error('Login failed.')
